@@ -6,27 +6,14 @@ public class Functions {
                 return swish(input, b);
             case "sigmoid":
                 return sigmoid(input, b);
-            case "leakyRELU":
+            case "leakyRelu":
                 return leakyRELU(input, b);
-            case "RELU":
+            case "relu":
                 return RELU(input, b);
         }
         throw new Exception("No match found for \"" + str + "\"");
     }
 
-    public static double activateLastLayer(double input, String str, boolean b) throws Exception {
-        switch (str) {
-            case "swish":
-                return swish(input, b);
-            case "sigmoid":
-                return sigmoid(input, b);
-            case "leakyRELU":
-                return leakyRELU(input, b);
-            case "RELU":
-                return RELU(input, b);
-        }
-        throw new Exception("No match found for \"" + str + "\"");
-    }
 
     public static double cost(double output, double expected, String str, boolean b) throws Exception {
         switch (str) {
@@ -98,11 +85,17 @@ public class Functions {
         }
     }
 
-    public static void randomInput(double[] input) {
-        //int k = (int)(10.*Math.random());
-        for (int i = 0; i < input.length; i++) {
+    public static double[] randomInput(double[] input) {
+        for (int i = 0; i < input.length; i++)
             input[i] = Math.random();
-        }
-        //input[k]=1.;
+        return input;
+    }
+
+    public static int collapse(double[] arr) {
+        int max = 0;
+        for (int i = 0; i < arr.length; i++)
+            if (arr[i] > arr[max])
+                max = i;
+        return max;
     }
 }
