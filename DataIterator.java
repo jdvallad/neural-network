@@ -7,7 +7,7 @@ public abstract class DataIterator implements Serializable {
     private int batchCounter;
     private boolean hasNextBatch;
 
-    public DataIterator(int batchSize, int numBatches, boolean hasExpected) {
+    public DataIterator(int batchSize, int numBatches) {
         this.batchSize = batchSize;
         this.numBatches = numBatches;
         batchCounter = 0;

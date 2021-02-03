@@ -28,8 +28,8 @@ public class nn implements Serializable {
     public nn() {
     }
 
-    public void add(String act, int out) {
-        activations.add(act);
+    public void add(String activation, int out) {
+        activations.add(activation);
         layers.add(out);
     }
 
@@ -137,7 +137,7 @@ public class nn implements Serializable {
         int expectedHeight = (int) expected.get("height");
         double expectedScale = (double) expected.get("scale");
         boolean expectedColor = (boolean) expected.get("color");
-        ImageViewer one = null, two = null, three = null;
+        ImageViewer one, two, three;
         one = new ImageViewer("input");
         two = new ImageViewer("output");
         three = new ImageViewer("expected");
@@ -155,9 +155,9 @@ public class nn implements Serializable {
                     gradientIncrement(output, pair.expected);
                     if (print)
                         batchErrorSum += error(output, pair.expected);
-                    one.show(ImageViewer.listToImage(pair.input, inputWidth, inputHeight,inputColor), inputScale);
-                    two.show(ImageViewer.listToImage(output, expectedWidth, expectedHeight,expectedColor), expectedScale);
-                    three.show(ImageViewer.listToImage(pair.expected, expectedWidth, expectedHeight,expectedColor), expectedScale);
+                    one.show(ImageViewer.listToImage(pair.input, inputWidth, inputHeight, inputColor), inputScale);
+                    two.show(ImageViewer.listToImage(output, expectedWidth, expectedHeight, expectedColor), expectedScale);
+                    three.show(ImageViewer.listToImage(pair.expected, expectedWidth, expectedHeight, expectedColor), expectedScale);
                 }
                 if (print)
                     System.out.println("Batch Average Cost: " + batchErrorSum / data.batchSize);
@@ -184,9 +184,11 @@ public class nn implements Serializable {
                 if (Functions.collapse(output) == Functions.collapse(pair.expected))
                     correct++;
             }
-            System.out.println("Accuracy: " + (100. * correct / count) + " %");
+            System.out.println("Accuracy: " + (100. * correct / count) + " %\r\n");
         }
-        System.out.println("\r\nFinal Accuracy: " + (100. * correct / count) + " %");
+        System.out.println("Total data points: " + (int) count);
+        System.out.println("Total missed: " + (int) (count - correct));
+        System.out.println("Final Accuracy: " + (100. * correct / count) + " %");
     }
 
     public void resetGradient() {
