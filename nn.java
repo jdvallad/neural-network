@@ -14,6 +14,7 @@ public class nn implements Serializable {
     String cost, saveFile;
     List<String> activations;
     List<Integer> layers;
+    List<Boolean> locked;
     double[][] errors;
 
     public nn(int inputSize, String cost, String saveFile) {
@@ -36,6 +37,7 @@ public class nn implements Serializable {
     public void build() {
         values = new double[layers.size()][];
         biases = new double[layers.size()][];
+        locked = new ArrayList<Boolean>();
         weights = new double[layers.size()][][];
         weightAverages = new double[weights.length][][];
         biasAverages = new double[biases.length][];
@@ -46,6 +48,7 @@ public class nn implements Serializable {
             weights[r] = new double[biases[r].length][];
             biasAverages[r] = new double[biases[r].length];
             weightAverages[r] = new double[weights[r].length][];
+            this.locked.set(r, false);
             for (int c = 0; c < weightAverages[r].length; c++) {
                 biases[r][c] = Functions.biasInitialize();
                 weights[r][c] = new double[values[r - 1].length];
@@ -202,11 +205,13 @@ public class nn implements Serializable {
 
     public void updateParameters(int batchSize, double learningRate) {
         for (int r = 1; r < weights.length; r++) {
-            for (int c = 0; c < weights[r].length; c++) {
-                biases[r][c] -= (learningRate * biasAverages[r][c]) / batchSize;
-                for (int k = 0; k < weights[r][c].length; k++)
-                    weights[r][c][k] -= (learningRate * weightAverages[r][c][k]) / batchSize;
-            }
+            if(!locked.get(r)){
+                 for (int c = 0; c < weights[r].length; c++) {
+                     biases[r][c] -= (learningRate * biasAverages[r][c]) / batchSize;
+                     for (int k = 0; k < weights[r][c].length; k++)
+                         weights[r][c][k] -= (learningRate * weightAverages[r][c][k]) / batchSize;
+                 }
+             }
         }
         resetGradient();
         save();
