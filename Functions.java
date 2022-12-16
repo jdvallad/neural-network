@@ -26,7 +26,7 @@ public class Functions {
     }
 
     public static double weightInitialize() {
-        return 2.0 * Math.random() - 1.;
+        return 0.1;
     }
 
     public static double biasInitialize() {
