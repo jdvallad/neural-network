@@ -36,6 +36,11 @@ public class nn implements Serializable {
     public void build() {
         values = new double[layers.size()][];
         biases = new double[layers.size()][];
+<<<<<<< HEAD
+=======
+        locked = new ArrayList<Boolean>();
+        locked.add(null);
+>>>>>>> 01b4f0ce2f5e37f1aece051fe35dd4e044fb1b0a
         weights = new double[layers.size()][][];
         weightAverages = new double[weights.length][][];
         biasAverages = new double[biases.length][];
@@ -46,6 +51,10 @@ public class nn implements Serializable {
             weights[r] = new double[biases[r].length][];
             biasAverages[r] = new double[biases[r].length];
             weightAverages[r] = new double[weights[r].length][];
+<<<<<<< HEAD
+=======
+            this.locked.add(false);
+>>>>>>> 01b4f0ce2f5e37f1aece051fe35dd4e044fb1b0a
             for (int c = 0; c < weightAverages[r].length; c++) {
                 biases[r][c] = Functions.biasInitialize();
                 weights[r][c] = new double[values[r - 1].length];

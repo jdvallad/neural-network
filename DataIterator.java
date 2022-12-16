@@ -32,6 +32,7 @@ public abstract class DataIterator implements Serializable {
         batchCounter = 0;
         hasNextBatch = true;
     }
+   
     public int getBatchCounter(){
         return batchCounter;
     }
