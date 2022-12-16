@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 
 public class Driver {
 public static void main(String[] args) throws Exception {
-        long startTime = System.nanoTime();
         class mnistIterator extends DataIterator {
             List<Integer> indices = initializeIndices();
 
@@ -71,10 +70,6 @@ public static void main(String[] args) throws Exception {
         Map<String, Object> input = Map.of("width", 28, "height", 28, "color", false, "scale", 10.);
         Map<String, Object> output = Map.of("width", 10, "height", 1, "color", false, "scale", 80.);
         mnist.train(mnistIter, 1, .1, true, input, output);
-        //mnist.getAccuracy(mnistIter);
-        long endTime = System.nanoTime();
-        long duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.
-        System.out.println("Total Execution Time: " + duration);
         return;
 }
 }
