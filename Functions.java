@@ -14,7 +14,14 @@ public class Functions {
         throw new Exception("No match found for \"" + str + "\"");
     }
 
-
+    public static void reverse(int[] data) {
+        for (int left = 0, right = data.length - 1; left < right; left++, right--) {
+            // swap the values at the left and right indices
+            int temp = data[left];
+            data[left]  = data[right];
+            data[right] = temp;
+        }
+    }
     public static double cost(double output, double expected, String str, boolean b) throws Exception {
         switch (str) {
             case "logLoss":
