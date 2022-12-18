@@ -40,6 +40,8 @@ public class nn implements Serializable {
         weightAverages = new double[weights.length][][];
         biasAverages = new double[biases.length][];
         values[0] = new double[layers.get(0)];
+        biases[0] = new double[layers.get(0)];
+        weights[0] = new double[layers.get(0)][];
         for (int r = 1; r < weightAverages.length; r++) {
             values[r] = new double[layers.get(r)];
             biases[r] = new double[layers.get(r)];
@@ -47,11 +49,11 @@ public class nn implements Serializable {
             biasAverages[r] = new double[biases[r].length];
             weightAverages[r] = new double[weights[r].length][];
             for (int c = 0; c < weightAverages[r].length; c++) {
-                biases[r][c] = Functions.biasInitialize();
+                biases[r][c] = Functions.heParameterInitialize(biases[r-1].length);
                 weights[r][c] = new double[values[r - 1].length];
                 weightAverages[r][c] = new double[weights[r][c].length];
                 for (int k = 0; k < weightAverages[r][c].length; k++)
-                    weights[r][c][k] = Functions.weightInitialize();
+                    weights[r][c][k] = Functions.heParameterInitialize(weights[r-1].length);
             }
         }
         save();
@@ -155,9 +157,9 @@ public class nn implements Serializable {
                     gradientIncrement(output, pair.expected);
                     if (print)
                         batchErrorSum += error(output, pair.expected);
-                    one.show(ImageViewer.listToImage(pair.input, inputWidth, inputHeight, inputColor), inputScale);
-                    two.show(ImageViewer.listToImage(output, expectedWidth, expectedHeight, expectedColor), expectedScale);
-                    three.show(ImageViewer.listToImage(pair.expected, expectedWidth, expectedHeight, expectedColor), expectedScale);
+                    one.show(ImageViewer.listToImage(Functions.scale(Functions.shape(pair.input, inputWidth, inputHeight, inputColor ? 3 : 1),255.)), inputScale);
+                    two.show(ImageViewer.listToImage(Functions.scale(Functions.shape(output, expectedWidth, expectedHeight, expectedColor ? 3 : 1),255.)), expectedScale);
+                    three.show(ImageViewer.listToImage(Functions.scale(Functions.shape(pair.expected, expectedWidth, expectedHeight, expectedColor ? 3 : 1),255.)), expectedScale);
                 }
                 if (print)
                     System.out.println("Batch Average Cost: " + batchErrorSum / data.batchSize);
@@ -216,16 +218,16 @@ public class nn implements Serializable {
         errors = new double[biases.length][];
         errors[errors.length - 1] = new double[biases[biases.length - 1].length];
         for (int c = 0; c < errors[errors.length - 1].length; c++)
-            errors[errors.length - 1][c] = Functions.cost(output[c], expected[c], cost, false)
+            errors[errors.length - 1][c] = Functions.cost(output[c], expected[c], cost, 1)
                     * Functions.activate(weightedSum(errors.length - 1, c),
-                    activations.get(activations.size() - 1), false);
+                    activations.get(activations.size() - 1), 1);
         for (int r = errors.length - 2; r >= 1; r--) {
             errors[r] = new double[biases[r].length];
             for (int c = 0; c < errors[r].length; c++) {
                 double sum = 0.;
                 for (int i = 0; i < biases[r + 1].length; i++)
                     sum += errors[r + 1][i] * weights[r + 1][i][c];
-                sum *= Functions.activate(weightedSum(r, c), activations.get(r), false);
+                sum *= Functions.activate(weightedSum(r, c), activations.get(r), 1);
                 errors[r][c] = sum;
             }
         }
@@ -243,11 +245,11 @@ public class nn implements Serializable {
         System.arraycopy(input, 0, values[0], 0, values[0].length);
         for (int r = 1; r < biases.length - 1; r++)
             for (int c = 0; c < biases[r].length; c++)
-                values[r][c] = Functions.activate(weightedSum(r, c), activations.get(r), true);
+                values[r][c] = Functions.activate(weightedSum(r, c), activations.get(r), 0);
         for (int c = 0; c < biases[biases.length - 1].length; c++)
             values[biases.length - 1][c] = res[c]
                     = Functions.activate(weightedSum(biases.length - 1, c)
-                    , activations.get(activations.size() - 1), true);
+                    , activations.get(activations.size() - 1), 0);
         return res;
     }
 
@@ -261,7 +263,7 @@ public class nn implements Serializable {
     public double error(double[] output, double[] expected) throws Exception {
         double sum = 0.;
         for (int i = 0; i < output.length; i++)
-            sum += Functions.cost(output[i], expected[i], cost, true);
+            sum += Functions.cost(output[i], expected[i], cost, 0);
         return sum / output.length;
     }
 }
