@@ -2,6 +2,7 @@ import java.util.Random;
 
 public class Functions {
     static Random rand = new Random(0);
+
     static double activate(double input, String str, int deriv) throws Exception {
         switch (str) {
             case "swish":
@@ -13,28 +14,16 @@ public class Functions {
             case "relu":
                 return relu(input, deriv);
             case "tanh":
-            return tanh(input,deriv);
+                return tanh(input, deriv);
+            case "softmax":
+            throw new Exception("Only use softmax when combined with logLoss!");
         }
         throw new Exception("No match found for \"" + str + "\"");
     }
 
-    static int[] reverse(int[] data) {
-        int[] output = new int[data.length];
-        for (int i = 0; i < data.length; i++)
-            output[i] = data[data.length - 1 - i];
-        return output;
-    }
-
-    static double[] reverse(double[] data) {
-        double[] output = new double[data.length];
-        for (int i = 0; i < data.length; i++)
-            output[i] = data[data.length - 1 - i];
-        return output;
-    }
-
     static double cost(double output, double expected, String str, int deriv) throws Exception {
         switch (str) {
-            case "logLoss":
+            case "logloss":
                 return logLoss(output, expected, deriv);
             case "meanSquaredError":
                 return meanSquaredError(output, expected, deriv);
@@ -42,16 +31,15 @@ public class Functions {
         throw new Exception("No match found for \"" + str + "\"");
     }
 
-    static double weightInitialize() {
-        return Math.random() * 2. - 1;
-    }
-
-    static double heParameterInitialize(int previousLayer){
+    static double heParameterInitialize(int previousLayer) {
         return rand.nextGaussian() * Math.sqrt(2. / ((double) previousLayer));
     }
-   
-    static double biasInitialize() {
-        return 0.1;
+
+    static double softmax(double[] inputLayer, double input) {
+        double total = 0.;
+        for (int i = 0; i < inputLayer.length; i++)
+            total += Math.exp(inputLayer[i]);
+        return Math.exp(input) / total;
     }
 
     static double sigmoid(double input, int deriv) {
@@ -100,14 +88,14 @@ public class Functions {
         }
     }
 
-    static double tanh(double input, int deriv){
-        switch(deriv){
+    static double tanh(double input, int deriv) {
+        switch (deriv) {
             case 0:
-            return 1. - 2.*sigmoid(-2.*input, 0);
+                return 1. - 2. * sigmoid(-2. * input, 0);
             case 1:
-            return 4.*sigmoid(-2.*input, 1);
+                return 4. * sigmoid(-2. * input, 1);
             default:
-            return Double.MAX_VALUE;
+                return Double.MAX_VALUE;
         }
     }
 

@@ -1,39 +1,55 @@
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
-import java.util.List;
 
-public abstract class DataIterator implements Serializable {
-    protected final int batchSize;
+public class DataIterator implements Serializable {
+    public final int batchSize;
     public final int numBatches;
-    private int batchCounter;
+    private int batchCounter, index;
     private boolean hasNextBatch;
+    private final double[][] data, labels;
 
-    public DataIterator(int batchSize, int numBatches) {
+    public DataIterator(int batchSize, String filePath) throws IOException, ClassNotFoundException {
         this.batchSize = batchSize;
-        this.numBatches = numBatches;
         batchCounter = 0;
         hasNextBatch = true;
+        index = 0;
+        double[][][] temp;
+        FileInputStream fileIn = new FileInputStream(filePath);
+        ObjectInputStream in = new ObjectInputStream(fileIn);
+        temp = (double[][][]) in.readObject();
+        in.close();
+        fileIn.close();
+        data = temp[0].clone();
+        labels = temp[1].clone();
+        this.numBatches = data.length / batchSize;
     }
 
-    public abstract List<DataPair> nextBatch() throws Exception;
+    public DataPair[] nextBatch() throws Exception {
+        DataPair[] res = new DataPair[batchSize];
+        for (int i = 0; i < batchSize; i++) {
+            res[i] = new DataPair(data[index], labels[index]);
+            index++;
+        }
+        batchCounter++;
+        if (batchCounter == numBatches)
+            hasNextBatch = false;
+        return res;
 
-    public abstract void reset() throws Exception;
+    }
+
+    public void reset() throws Exception {
+        batchCounter = 0;
+        hasNextBatch = true;
+        index = 0;
+    }
 
     public boolean hasNextBatch() {
         return hasNextBatch;
     }
 
-    protected void incrementBatchCounter() {
-        batchCounter++;
-        if (batchCounter == numBatches)
-            hasNextBatch = false;
-    }
-
-    protected void resetBatchCounter() {
-        batchCounter = 0;
-        hasNextBatch = true;
-    }
-   
-    public int getBatchCounter(){
+    public int getBatchCounter() {
         return batchCounter;
     }
 }
