@@ -131,16 +131,20 @@ public class WeightLayer {
         return true;
     }
 
-    public double[] compute() throws Exception {
+    public void compute() throws Exception {
 
         for (int r = 0; r < outputNodes; r++) {
             double sum = biases[r];
             for (int c = 0; c < inputNodes; c++) {
                 sum += previousNodeLayer.values[c] * weights[r][c];
             }
-            nextNodeLayer.values[r] = Functions.activate(sum, this.activation, 0);
+            if (this.activation.equals("softmax")) {
+                nextNodeLayer.values[r] = Functions.softmax(this.previousNodeLayer.values, sum);
+            } else {
+                nextNodeLayer.values[r] = Functions.activate(sum, this.activation, 0);
+            }
         }
-        return nextNodeLayer.compute();
+        return;
     }
 
     public double weightedSum(int index) {

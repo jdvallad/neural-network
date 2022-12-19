@@ -29,10 +29,4 @@ public class NodeLayer {
         }
     }
 
-    public double[] compute() throws Exception {
-        if (nextWeightLayer == null)
-            return this.values.clone();
-        return this.nextWeightLayer.compute();
-    }
-
 }

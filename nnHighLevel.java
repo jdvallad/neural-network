@@ -99,9 +99,13 @@ class nnHighLevel {
     }
 
     public double[] compute(double[] input) throws Exception {
-        headNode.feed(input);
-        double[] res = headNode.compute();
-        return res;
+        NodeLayer temp = headNode;
+        temp.feed(input);
+        while(temp != tailNode){
+            temp.nextWeightLayer.compute();
+            temp=temp.nextWeightLayer.nextNodeLayer;
+        }
+        return temp.values.clone();
     }
 
     public void validate(DataIterator validator) throws Exception {
@@ -143,10 +147,15 @@ class nnHighLevel {
 
     public void gradientIncrement(double[] output, double[] expected) throws Exception {
         WeightLayer current = tailNode.previousWeightLayer;
-        for (int i = 0; i < current.errors.length; i++)
-            current.errors[i] = Functions.cost(output[i], expected[i], cost, 1)
-                    * Functions.activate(current.weightedSum(i),
-                            current.activation, 1);
+        for (int i = 0; i < current.errors.length; i++) {
+            if (current.activation.equals("softmax")) {
+                current.errors[i] = output[i] - expected[i];
+            } else {
+                current.errors[i] = Functions.cost(output[i], expected[i], cost, 1)
+                        * Functions.activate(current.weightedSum(i),
+                                current.activation, 1);
+            }
+        }
         current = current.previousNodeLayer.previousWeightLayer;
         while (current != null) {
             for (int i = 0; i < current.errors.length; i++) {
@@ -167,7 +176,6 @@ class nnHighLevel {
             current = current.previousNodeLayer.previousWeightLayer;
         }
     }
-
 
     public void updateParameters(int batchSize, double learningRate) {
         WeightLayer temp = headNode.nextWeightLayer;

@@ -55,10 +55,16 @@ public class Functions {
     }
 
     static double softmax(double[] inputLayer, double input) {
+        double max = 0;
+        for(double d : inputLayer){
+            if( d > max){
+                max = d;
+            }
+        }
         double total = 0.;
         for (int i = 0; i < inputLayer.length; i++)
-            total += Math.exp(inputLayer[i]);
-        return Math.exp(input) / total;
+            total += Math.exp(inputLayer[i] - max);
+        return Math.exp(input - max) / total;
     }
 
     static double sigmoid(double input, int deriv) {
