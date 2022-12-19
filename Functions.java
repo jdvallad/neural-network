@@ -47,6 +47,13 @@ public class Functions {
         return rand.nextGaussian() * Math.sqrt(2. / ((double) previousLayer));
     }
 
+    static void print(double[] input) {
+        System.out.print("\r\n[");
+        for (int i = 0; i < input.length - 1; i++)
+            System.out.print("" + input[i] + ", ");
+        System.out.print(input[input.length - 1] + "]\r\n");
+    }
+
     static double softmax(double[] inputLayer, double input) {
         double total = 0.;
         for (int i = 0; i < inputLayer.length; i++)
@@ -225,5 +232,165 @@ public class Functions {
                     res[i][r][c] = scale * input[i][r][c];
         }
         return res;
+    }
+
+    public static void set(double[] x, double[] y) {
+        for (int i = 0; i < Math.min(x.length, y.length); i++) {
+            x[i] = y[i];
+        }
+        return;
+    }
+
+    public static void set(double[] x, double y) {
+        for (int i = 0; i < x.length; i++) {
+            x[i] = y;
+        }
+        return;
+    }
+
+    public static void set(double[][] x, double[][] y) {
+        for (int r = 0; r < Math.min(x.length, y.length); r++) {
+            for (int c = 0; c < Math.min(x[0].length, y[0].length); c++) {
+                x[r][c] = y[r][c];
+            }
+        }
+        return;
+    }
+
+    public static void set(double[][] x, double y) {
+        for (int r = 0; r < x.length; r++) {
+            for (int c = 0; c < x[0].length; c++) {
+                x[r][c] = y;
+            }
+        }
+        return;
+    }
+
+    public static void set(double[][][] x, double[][][] y) {
+        for (int r = 0; r < x.length; r++) {
+            for (int c = 0; c < x[0].length; c++) {
+                for (int k = 0; k < x[0][0].length; k++) {
+                    x[r][c][k] = y[r][c][k];
+                }
+            }
+        }
+        return;
+    }
+
+    public static void set(double[][][] x, double y) {
+        for (int r = 0; r < x.length; r++) {
+            for (int c = 0; c < x[0].length; c++) {
+                for (int k = 0; k < x[0][0].length; k++) {
+                    x[r][c][k] = y;
+                }
+            }
+        }
+        return;
+    }
+
+    public static double[] product(double[] x, double y) {
+        double[] res = x.clone();
+        for (int i = 0; i < x.length; i++)
+            res[i] = y * x[i];
+        return res;
+    }
+
+    public static double[][] product(double[][] x, double y) {
+        double[][] res = x.clone();
+        for (int r = 0; r < x.length; r++)
+            for (int c = 0; c < x[0].length; c++)
+                res[r][c] = y * x[r][c];
+        return res;
+    }
+
+    public static double[][][] product(double[][][] x, double y) {
+        double[][][] res = x.clone();
+        for (int r = 0; r < x.length; r++)
+            for (int c = 0; c < x[r].length; c++)
+                for (int k = 0; k < x[r][c].length; k++)
+                    res[r][c][k] = y * x[r][c][k];
+        return res;
+    }
+
+    public static void increase(double[] x, double[] y) {
+        for (int i = 0; i < x.length; i++) {
+            x[i] = x[i] + y[i];
+        }
+        return;
+    }
+
+    public static void increase(double[] x, double y) {
+        for (int i = 0; i < x.length; i++) {
+            x[i] = x[i] + y;
+        }
+        return;
+    }
+
+    public static void increase(double[][] x, double[][] y) {
+        for (int r = 0; r < x.length; r++) {
+            for (int c = 0; c < x[r].length; c++) {
+                x[r][c] = x[r][c] + y[r][c];
+            }
+        }
+        return;
+    }
+
+    public static void increase(double[][] x, double y) {
+        for (int r = 0; r < x.length; r++) {
+            for (int c = 0; c < x[r].length; c++) {
+                x[r][c] = x[r][c] + y;
+            }
+        }
+        return;
+    }
+
+    public static void increase(double[][][] x, double[][][] y) {
+        for (int r = 0; r < x.length; r++) {
+            for (int c = 0; c < x[r].length; c++) {
+                for (int k = 0; k < x[r][c].length; k++) {
+                    x[r][c][k] = x[r][c][k] + y[r][c][k];
+                }
+            }
+        }
+        return;
+    }
+
+    public static void increase(double[][][] x, double y) {
+        for (int r = 0; r < x.length; r++) {
+            for (int c = 0; c < x[r].length; c++) {
+                for (int k = 0; k < x[r][c].length; k++) {
+                    x[r][c][k] = x[r][c][k] + y;
+                }
+            }
+        }
+        return;
+    }
+
+    public static double[][] transposeMatrix(double[][] m) {
+        double[][] temp = new double[m[0].length][m.length];
+        for (int i = 0; i < m.length; i++)
+            for (int j = 0; j < m[0].length; j++)
+                temp[j][i] = m[i][j];
+        return temp;
+    }
+
+    static double[][] multiplyMatrices(double[][] firstMatrix, double[][] secondMatrix) {
+        double[][] result = new double[firstMatrix.length][secondMatrix[0].length];
+
+        for (int row = 0; row < result.length; row++) {
+            for (int col = 0; col < result[row].length; col++) {
+                result[row][col] = multiplyMatricesCell(firstMatrix, secondMatrix, row, col);
+            }
+        }
+
+        return result;
+    }
+
+    static double multiplyMatricesCell(double[][] firstMatrix, double[][] secondMatrix, int row, int col) {
+        double cell = 0;
+        for (int i = 0; i < secondMatrix.length; i++) {
+            cell += firstMatrix[row][i] * secondMatrix[i][col];
+        }
+        return cell;
     }
 }

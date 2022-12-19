@@ -25,13 +25,17 @@ class nnHighLevel {
     public nnHighLevel() {
     }
 
-    public void add(String activation, int out) {
+    public nnHighLevel build() {
+        return this;
+    }
+
+    public nnHighLevel add(String activation, int out) {
         NodeLayer newTail = new NodeLayer(out);
         WeightLayer newWeight = new WeightLayer(tailNode, newTail, activation);
         tailNode.nextWeightLayer = newWeight;
         newTail.previousWeightLayer = newWeight;
         tailNode = newTail;
-        return;
+        return this;
     }
 
     public void save() {
@@ -96,7 +100,8 @@ class nnHighLevel {
 
     public double[] compute(double[] input) throws Exception {
         headNode.feed(input);
-        return headNode.compute();
+        double[] res = headNode.compute();
+        return res;
     }
 
     public void validate(DataIterator validator) throws Exception {
@@ -128,34 +133,102 @@ class nnHighLevel {
     }
 
     public void resetGradient() {
-        NodeLayer temp = headNode;
-        while(temp != tailNode){
-            temp.nextWeightLayer.setBias(0.);
-            temp.nextWeightLayer.setWeights(0.);
-            temp = temp.nextWeightLayer.nextNodeLayer;
+        WeightLayer temp = headNode.nextWeightLayer;
+        while (temp != null) {
+            Functions.set(temp.biasAverages, 0);
+            Functions.set(temp.weightAverages, 0);
+            temp = temp.nextNodeLayer.nextWeightLayer;
         }
     }
 
     public void gradientIncrement(double[] output, double[] expected) throws Exception {
         WeightLayer current = tailNode.previousWeightLayer;
-        Functions.scale(current.errors, 0);
         for (int i = 0; i < current.errors.length; i++)
             current.errors[i] = Functions.cost(output[i], expected[i], cost, 1)
-                    * Functions.activate(current.weightedSum(i), current.weightedSum(),
+                    * Functions.activate(current.weightedSum(i),
                             current.activation, 1);
-        current = current.previousNLayer.previousWLayer;
-        while (current.previousNLayer.previousWLayer != null) {
-            Functions.set(current.errors, 0);
+        current = current.previousNodeLayer.previousWeightLayer;
+        while (current != null) {
             for (int i = 0; i < current.errors.length; i++) {
                 double sum = 0.;
-                for (int r = 0; r < current.nextNLayer.nextWLayer.biases.length; r++)
-                    sum += current.nextNLayer.nextWLayer.errors[r] * current.nextNLayer.nextWLayer.weights[r][i];
-                sum *= Functions.activate(current.weightedSum(i), current.weightedSum(), current.activation, 1);
+                for (int r = 0; r < current.nextNodeLayer.nextWeightLayer.biases.length; r++)
+                    sum += current.nextNodeLayer.nextWeightLayer.errors[r]
+                            * current.nextNodeLayer.nextWeightLayer.weights[r][i];
+                sum *= Functions.activate(current.weightedSum(i), current.activation, 1);
                 current.errors[i] = sum;
-
             }
-            current = current.previousNLayer.previousWLayer;
+            current = current.previousNodeLayer.previousWeightLayer;
         }
+        current = tailNode.previousWeightLayer;
+        while (current != null) {
+            Functions.increase(current.weightAverages,
+                    Functions.multiplyMatrices(Functions.transposeMatrix(new double[][] { current.errors }),
+                            new double[][] { current.previousNodeLayer.values }));
+            current = current.previousNodeLayer.previousWeightLayer;
+        }
+    }
 
 
+    public void updateParameters(int batchSize, double learningRate) {
+        WeightLayer temp = headNode.nextWeightLayer;
+        while (temp != null) {
+            if (!temp.locked) {
+                Functions.increase(temp.biases,
+                        Functions.product(temp.biasAverages, -learningRate / ((double) batchSize)));
+                Functions.increase(temp.weights,
+                        Functions.product(temp.weightAverages, -learningRate / ((double) batchSize)));
+            }
+            temp = temp.nextNodeLayer.nextWeightLayer;
+        }
+        resetGradient();
+        save();
+    }
+
+    public void printStructure() {
+        System.out.print("\r\n---------------------------------");
+        /*
+         * for (int r = 0; r < activations.size(); r++) {
+         * System.out.print("-----");
+         * }
+         */
+        System.out.print("\r\nInput layer (" + headNode.numNodes + " nodes)");
+        NodeLayer temp = headNode.nextWeightLayer.nextNodeLayer;
+        while (temp != tailNode) {
+            System.out.print("\r\n");
+            System.out.print("----");
+
+            System.out.print(
+                    "> Hidden layer using " + temp.previousWeightLayer.activation + " (" + temp.numNodes + " nodes)");
+            temp = temp.nextWeightLayer.nextNodeLayer;
+        }
+        System.out.print("\r\n");
+        System.out.print("----");
+        System.out.print("> Output layer using " + temp.previousWeightLayer.activation + " ("
+                + temp.numNodes + " nodes)\r\n");
+        System.out.print("Cost Function: " + cost);
+        /*
+         * System.out.print("\r\n---------------------------------");
+         * for (int r = 0; r < activations.size(); r++) {
+         * System.out.print("-----");
+         * }
+         */
+        System.out.println();
+    }
+
+    public void getClassifierAccuracy(DataIterator iter) throws Exception {
+        double count, correct;
+        count = correct = 0;
+        while (iter.hasNextBatch()) {
+            for (DataPair pair : iter.nextBatch()) {
+                double[] output = compute(pair.input);
+                count++;
+                if (Functions.collapse(output) == Functions.collapse(pair.expected))
+                    correct++;
+            }
+        }
+        System.out.println("Total data points: " + (int) count);
+        System.out.println("Total missed: " + (int) (count - correct));
+        System.out.println("Accuracy: " + (100. * correct / count) + " %");
+        iter.reset();
+    }
 }

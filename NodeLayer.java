@@ -23,9 +23,9 @@ public class NodeLayer {
         }
     }
 
-    public void feed(double[] values) {
+    public void feed(double[] input) {
         for (int i = 0; i < this.numNodes; i++) {
-            this.values[i] = values[i];
+            this.values[i] = input[i];
         }
     }
 

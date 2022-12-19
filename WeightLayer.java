@@ -5,7 +5,7 @@ public class WeightLayer {
     boolean locked;
     double[] biases, biasAverages, errors;
     double[][] weights, weightAverages;
-    String activation, type;
+    String activation;
 
     public WeightLayer(NodeLayer previousNodeLayer, NodeLayer nextNodeLayer, String activation) {
         this.previousNodeLayer = previousNodeLayer;
@@ -31,7 +31,7 @@ public class WeightLayer {
             this.weightAverages[r] = new double[inputNodes];
             for (int c = 0; c < this.inputNodes; c++) {
                 if (previousNodeLayer.previousWeightLayer == null)
-                    this.weightAverages[r][c] = Functions.heParameterInitialize(this.biases.length);
+                    this.weights[r][c] = Functions.heParameterInitialize(this.biases.length);
                 else
                     this.weights[r][c] = Functions
                             .heParameterInitialize(previousNodeLayer.previousWeightLayer.biases.length);
@@ -141,5 +141,13 @@ public class WeightLayer {
             nextNodeLayer.values[r] = Functions.activate(sum, this.activation, 0);
         }
         return nextNodeLayer.compute();
+    }
+
+    public double weightedSum(int index) {
+        double sum = this.biases[index];
+        for (int i = 0; i < inputNodes; i++) {
+            sum += previousNodeLayer.values[i] * weights[index][i];
+        }
+        return sum;
     }
 }
