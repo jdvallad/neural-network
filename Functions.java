@@ -16,19 +16,31 @@ public class Functions {
             case "tanh":
                 return tanh(input, deriv);
             case "softmax":
-            throw new Exception("Only use softmax when combined with logLoss!");
+                throw new Exception("Only use softmax when combined with logLoss!");
         }
         throw new Exception("No match found for \"" + str + "\"");
     }
 
     static double cost(double output, double expected, String str, int deriv) throws Exception {
         switch (str) {
-            case "logloss":
+            case "logLoss":
                 return logLoss(output, expected, deriv);
             case "meanSquaredError":
                 return meanSquaredError(output, expected, deriv);
         }
         throw new Exception("No match found for \"" + str + "\"");
+    }
+
+    static double[] clone(double[] input) {
+        return scale(input, 1.);
+    }
+
+    static double[][] clone(double[][] input) {
+        return scale(input, 1.);
+    }
+
+    static double[][][] clone(double[][][] input) {
+        return scale(input, 1.);
     }
 
     static double heParameterInitialize(int previousLayer) {

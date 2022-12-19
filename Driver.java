@@ -2,16 +2,16 @@ import java.util.Map;
 
 public class Driver {
     public static void main(String[] args) throws Exception {
-        DataIterator trainer = new DataIterator(100, "../mnist/training/data.ser");
-        DataIterator validator = new DataIterator(100, "../mnist/validation/data.ser");
-        DataIterator tester = new DataIterator(100, "../mnist/testing/data.ser");
-        NeuralNetwork mnist = new NeuralNetwork(28 * 28, "logLoss", "./serials/mnistDigitCategorize.ser")
-                .add("leakyrelu", 64)
-                .add("leakyrelu", 64)
-                .add("softmax", 10)
+        DataIterator trainer = new DataIterator(100, "../mnist/training/data.ser").reverse();
+        DataIterator validator = new DataIterator(100, "../mnist/validation/data.ser").reverse();
+        DataIterator tester = new DataIterator(100, "../mnist/testing/data.ser").reverse();
+        NeuralNetwork mnist = new NeuralNetwork(10, "logLoss", "./serials/mnistDigitGenerate.ser")
+                .add("tanh", 16)
+                .add("tanh", 16)
+                .add("sigmoid", 28*28)
                 .build();
-        Map<String, Object> input = Map.of("width", 28, "height", 28, "scale", 10.);
-        Map<String, Object> output = Map.of("width", 10, "height", 1, "scale", 80.);
+        Map<String, Object> output = Map.of("width", 28, "height", 28, "scale", 10.);
+        Map<String, Object> input = Map.of("width", 10, "height", 1, "scale", 80.);
         int epochs = 10;
         mnist.printStructure();
         for (int i = 0; i < epochs; i++) {

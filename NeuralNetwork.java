@@ -3,6 +3,7 @@ import java.util.*;
 
 /**
  * Most up to date version of NeuralNetwork
+ * most bugs work
  */
 public class NeuralNetwork implements Serializable {
     double[][][] weights, weightAverages;
@@ -263,10 +264,10 @@ public class NeuralNetwork implements Serializable {
         return res;
     }
 
-    public double weightedSum(int a, int b) {
-        double sum = biases[a][b];
-        for (int c = 0; c < values[a - 1].length; c++)
-            sum += values[a - 1][c] * weights[a][b][c];
+    public double weightedSum(int r, int c) {
+        double sum = biases[r][c];
+        for (int k = 0; k < values[r - 1].length; k++)
+            sum += values[r - 1][k] * weights[r][c][k];
         return sum;
     }
 

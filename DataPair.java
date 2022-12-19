@@ -1,5 +1,4 @@
-import java.io.Serializable;
-public class DataPair implements Serializable{
+public class DataPair{
     public final double[] input;
     public final double[] expected;
 

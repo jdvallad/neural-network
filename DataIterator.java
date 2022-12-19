@@ -1,17 +1,18 @@
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 
-public class DataIterator implements Serializable {
+public class DataIterator{
     public final int batchSize;
     public final int numBatches;
     private int batchCounter, index;
     private boolean hasNextBatch;
     private final double[][] data, labels;
+    private boolean reversed;
 
     public DataIterator(int batchSize, String filePath) throws IOException, ClassNotFoundException {
         this.batchSize = batchSize;
+        reversed = false;
         batchCounter = 0;
         hasNextBatch = true;
         index = 0;
@@ -29,7 +30,11 @@ public class DataIterator implements Serializable {
     public DataPair[] nextBatch() throws Exception {
         DataPair[] res = new DataPair[batchSize];
         for (int i = 0; i < batchSize; i++) {
-            res[i] = new DataPair(data[index], labels[index]);
+            if (reversed) {
+                res[i] = new DataPair(labels[index], data[index]);
+            } else {
+                res[i] = new DataPair(data[index], labels[index]);
+            }
             index++;
         }
         batchCounter++;
@@ -51,5 +56,10 @@ public class DataIterator implements Serializable {
 
     public int getBatchCounter() {
         return batchCounter;
+    }
+
+    public DataIterator reverse() {
+        reversed = !reversed;
+        return this;
     }
 }
