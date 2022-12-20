@@ -1,106 +1,51 @@
-import java.io.*;
-import java.util.*;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
-/**
- * Most up to date version of NeuralNetwork
- * most bugs work
- */
-public class NeuralNetwork implements Serializable {
-    double[][][] weights, weightAverages;
-    double[][] values, biases, biasAverages;
+class NeuralNetwork {
+
     String cost, saveFile;
-    List<String> activations;
-    List<Integer> layers;
-    double[][] errors;
+    NodeLayer headNode, tailNode;
 
-    public NeuralNetwork(int inputSize, String cost, String saveFile) {
-        activations = new ArrayList<>();
-        activations.add("headLayer");
-        layers = new ArrayList<>();
+    public NeuralNetwork(String cost, String saveFile) {
         this.cost = cost;
         this.saveFile = saveFile;
-        layers.add(inputSize);
+        headNode = null;
+        tailNode = null;
+    }
+
+    public static NeuralNetwork load(String filePath) {
+        // Need to implement
+        return null;
     }
 
     public NeuralNetwork() {
     }
 
+    public NeuralNetwork add(int inputSize) throws Exception {
+        if(headNode != null | tailNode != null){
+            throw new Exception("You can only add an input layer once!");
+        }
+        headNode = new NodeLayer(inputSize);
+        tailNode = headNode;
+        return this;
+    }
+
     public NeuralNetwork add(String activation, int out) {
-        activations.add(activation);
-        layers.add(out);
+        NodeLayer newTail = new NodeLayer(out);
+        WeightLayer newWeight = new WeightLayer(tailNode, newTail, activation);
+        tailNode.nextWeightLayer = newWeight;
+        newTail.previousWeightLayer = newWeight;
+        tailNode = newTail;
         return this;
-    }
-
-    public NeuralNetwork build() {
-        values = new double[layers.size()][];
-        biases = new double[layers.size()][];
-        weights = new double[layers.size()][][];
-        weightAverages = new double[weights.length][][];
-        biasAverages = new double[biases.length][];
-        values[0] = new double[layers.get(0)];
-        biases[0] = new double[layers.get(0)];
-        weights[0] = new double[layers.get(0)][];
-        for (int r = 1; r < weightAverages.length; r++) {
-            values[r] = new double[layers.get(r)];
-            biases[r] = new double[layers.get(r)];
-            weights[r] = new double[biases[r].length][];
-            biasAverages[r] = new double[biases[r].length];
-            weightAverages[r] = new double[weights[r].length][];
-            for (int c = 0; c < weightAverages[r].length; c++) {
-                biases[r][c] = Functions.heParameterInitialize(biases[r - 1].length);
-                weights[r][c] = new double[values[r - 1].length];
-                weightAverages[r][c] = new double[weights[r][c].length];
-                for (int k = 0; k < weightAverages[r][c].length; k++)
-                    weights[r][c][k] = Functions.heParameterInitialize(weights[r - 1].length);
-            }
-        }
-        save();
-        return this;
-    }
-
-    public static NeuralNetwork load(String filePath) {
-        Map<String, Object> data = null;
-        try {
-            FileInputStream fileIn = new FileInputStream(filePath);
-            ObjectInputStream in = new ObjectInputStream(fileIn);
-            data = (Map<String, Object>) in.readObject();
-            in.close();
-            fileIn.close();
-        } catch (IOException | ClassNotFoundException i) {
-            i.printStackTrace();
-        }
-        NeuralNetwork res = new NeuralNetwork();
-        assert data != null;
-        res.cost = (String) data.get("cost");
-        res.saveFile = (String) data.get("saveFile");
-        res.weights = (double[][][]) data.get("weights");
-        res.weightAverages = (double[][][]) data.get("weightAverages");
-        res.values = (double[][]) data.get("values");
-        res.biases = (double[][]) data.get("biases");
-        res.biasAverages = (double[][]) data.get("biasAverages");
-        res.activations = (List<String>) data.get("activations");
-        return res;
     }
 
     public void save() {
-        Map<String, Object> data = new HashMap<>();
-        data.put("cost", cost);
-        data.put("saveFile", saveFile);
-        data.put("weights", weights);
-        data.put("weightAverages", weightAverages);
-        data.put("values", values);
-        data.put("biases", biases);
-        data.put("biasAverages", biasAverages);
-        data.put("activations", activations);
-        try {
-            FileOutputStream fileOut = new FileOutputStream(saveFile);
-            ObjectOutputStream out = new ObjectOutputStream(fileOut);
-            out.writeObject(data);
-            out.close();
-            fileOut.close();
-        } catch (IOException i) {
-            i.printStackTrace();
-        }
+        // Need to implement
+        return;
     }
 
     public void showImages(DataIterator iter, Map<String, Object> inputSettings,
@@ -158,6 +103,16 @@ public class NeuralNetwork implements Serializable {
         return;
     }
 
+    public double[] compute(double[] input) throws Exception {
+        NodeLayer temp = headNode;
+        temp.feed(input);
+        while (temp != tailNode) {
+            temp.nextWeightLayer.compute();
+            temp = temp.nextWeightLayer.nextNodeLayer;
+        }
+        return temp.values.clone();
+    }
+
     public void validate(DataIterator validator) throws Exception {
         double totalErrorSum = 0;
         while (validator.hasNextBatch())
@@ -166,6 +121,13 @@ public class NeuralNetwork implements Serializable {
         System.out.println("Average Cost: " + (totalErrorSum / (validator.numBatches * validator.batchSize)));
         validator.reset();
         return;
+    }
+
+    public double error(double[] output, double[] expected) throws Exception {
+        double sum = 0.;
+        for (int i = 0; i < output.length; i++)
+            sum += Functions.cost(output[i], expected[i], cost, 0);
+        return sum / output.length;
     }
 
     public void train(DataIterator trainer, double learningRate) throws Exception {
@@ -177,6 +139,97 @@ public class NeuralNetwork implements Serializable {
         }
         trainer.reset();
         return;
+    }
+
+    public void resetGradient() {
+        NodeLayer temp = headNode;
+        while (temp != tailNode) {
+            Functions.set(temp.nextWeightLayer.biasAverages, 0);
+            Functions.set(temp.nextWeightLayer.weightAverages, 0);
+            temp = temp.nextWeightLayer.nextNodeLayer;
+        }
+    }
+
+    public void gradientIncrement(double[] output, double[] expected) throws Exception {
+        NodeLayer temp = tailNode;
+        for (int i = 0; i < temp.previousWeightLayer.errors.length; i++) {
+            if (temp.previousWeightLayer.activation.equals("softmax") && cost.equals("logLoss")) {
+                temp.previousWeightLayer.errors[i] = output[i] - expected[i];
+            } else {
+                temp.previousWeightLayer.errors[i] = Functions.cost(output[i], expected[i], cost, 1)
+                        * Functions.activate(temp.previousWeightLayer.weightedSum(i),
+                                temp.previousWeightLayer.activation, 1);
+            }
+        }
+        temp = temp.previousWeightLayer.previousNodeLayer;
+        while (temp != headNode) {
+            for (int i = 0; i < temp.previousWeightLayer.errors.length; i++) {
+                double sum = 0.;
+                for (int r = 0; r < temp.nextWeightLayer.biases.length; r++) {
+                    sum += temp.nextWeightLayer.errors[r]
+                            * temp.nextWeightLayer.weights[r][i];
+                }
+                sum *= Functions.activate(temp.previousWeightLayer.weightedSum(i), temp.previousWeightLayer.activation,
+                        1);
+                temp.previousWeightLayer.errors[i] = sum;
+            }
+            temp = temp.previousWeightLayer.previousNodeLayer;
+        }
+        temp = tailNode;
+        while (temp != headNode) {
+            Functions.increase(temp.previousWeightLayer.biasAverages, temp.previousWeightLayer.errors);
+            Functions.increase(temp.previousWeightLayer.weightAverages,
+                    Functions.multiplyMatrices(
+                            Functions.transposeMatrix(new double[][] { temp.previousWeightLayer.errors }),
+                            new double[][] { temp.previousWeightLayer.previousNodeLayer.values }));
+            temp = temp.previousWeightLayer.previousNodeLayer;
+        }
+    }
+
+    public void updateParameters(int batchSize, double learningRate) {
+        NodeLayer temp = headNode;
+        while (temp != tailNode) {
+            if (!temp.nextWeightLayer.locked) {
+                Functions.increase(temp.nextWeightLayer.biases,
+                        Functions.product(temp.nextWeightLayer.biasAverages, -learningRate / batchSize));
+                Functions.increase(temp.nextWeightLayer.weights,
+                        Functions.product(temp.nextWeightLayer.weightAverages, -learningRate / batchSize));
+            }
+            temp = temp.nextWeightLayer.nextNodeLayer;
+        }
+        resetGradient();
+        save();
+    }
+
+    public void printStructure() {
+        System.out.print("\r\n---------------------------------");
+        /*
+         * for (int r = 0; r < activations.size(); r++) {
+         * System.out.print("-----");
+         * }
+         */
+        System.out.print("\r\nInput layer (" + headNode.numNodes + " nodes)");
+        NodeLayer temp = headNode.nextWeightLayer.nextNodeLayer;
+        while (temp != tailNode) {
+            System.out.print("\r\n");
+            System.out.print("----");
+
+            System.out.print(
+                    "> Hidden layer using " + temp.previousWeightLayer.activation + " (" + temp.numNodes + " nodes)");
+            temp = temp.nextWeightLayer.nextNodeLayer;
+        }
+        System.out.print("\r\n");
+        System.out.print("----");
+        System.out.print("> Output layer using " + temp.previousWeightLayer.activation + " ("
+                + temp.numNodes + " nodes)\r\n");
+        System.out.print("Cost Function: " + cost);
+        /*
+         * System.out.print("\r\n---------------------------------");
+         * for (int r = 0; r < activations.size(); r++) {
+         * System.out.print("-----");
+         * }
+         */
+        System.out.println();
     }
 
     public void getClassifierAccuracy(DataIterator iter) throws Exception {
@@ -195,124 +248,4 @@ public class NeuralNetwork implements Serializable {
         System.out.println("Accuracy: " + (100. * correct / count) + " %");
         iter.reset();
     }
-
-    public void resetGradient() {
-        for (int r = 1; r < weightAverages.length; r++) {
-            for (int c = 0; c < weightAverages[r].length; c++) {
-                biasAverages[r][c] = 0.;
-                Arrays.fill(weightAverages[r][c], 0.);
-            }
-        }
-    }
-
-    public void updateParameters(int batchSize, double learningRate) {
-        for (int r = 1; r < weights.length; r++) {
-            for (int c = 0; c < weights[r].length; c++) {
-                biases[r][c] -= (learningRate * biasAverages[r][c]) / batchSize;
-                for (int k = 0; k < weights[r][c].length; k++)
-                    weights[r][c][k] -= (learningRate * weightAverages[r][c][k]) / batchSize;
-            }
-        }
-        resetGradient();
-        save();
-    }
-
-    public void gradientIncrement(double[] output, double[] expected) throws Exception {
-        errors = new double[biases.length][];
-        errors[errors.length - 1] = new double[biases[biases.length - 1].length];
-        for (int c = 0; c < errors[errors.length - 1].length; c++) {
-            if (activations.get(activations.size() - 1).equals("softmax") && cost.equals("logLoss")) {
-                errors[errors.length - 1][c] = output[c] - expected[c];
-            } else {
-                errors[errors.length - 1][c] = Functions.cost(output[c], expected[c], cost, 1)
-                        * Functions.activate(weightedSum(errors.length - 1, c),
-                                activations.get(activations.size() - 1), 1);
-            }
-        }
-        for (int r = errors.length - 2; r >= 1; r--) {
-            errors[r] = new double[biases[r].length];
-            for (int c = 0; c < errors[r].length; c++) {
-                double sum = 0.;
-                for (int i = 0; i < biases[r + 1].length; i++)
-                    sum += errors[r + 1][i] * weights[r + 1][i][c];
-                sum *= Functions.activate(weightedSum(r, c), activations.get(r), 1);
-                errors[r][c] = sum;
-            }
-        }
-        for (int r = biases.length - 1; r >= 1; r--) {
-            for (int c = 0; c < biases[r].length; c++) {
-                biasAverages[r][c] += errors[r][c];
-                for (int k = 0; k < weights[r][c].length; k++)
-                    weightAverages[r][c][k] += errors[r][c] * values[r - 1][k];
-            }
-        }
-    }
-
-    public double[] compute(double[] input) throws Exception {
-        double[] res = new double[biases[biases.length - 1].length];
-        System.arraycopy(input, 0, values[0], 0, values[0].length);
-        for (int r = 1; r < biases.length - 1; r++)
-            for (int c = 0; c < biases[r].length; c++)
-                values[r][c] = Functions.activate(weightedSum(r, c), activations.get(r), 0);
-        for (int c = 0; c < biases[biases.length - 1].length; c++)
-            if (activations.get(activations.size() - 1).equals("softmax")) {
-                values[biases.length - 1][c] = res[c] = Functions.softmax(values[biases.length - 2],
-                        weightedSum(biases.length - 1, c));
-            } else {
-                values[biases.length - 1][c] = res[c] = Functions.activate(weightedSum(biases.length - 1, c),
-                        activations.get(activations.size() - 1), 0);
-            }
-        return res;
-    }
-
-    public double weightedSum(int r, int c) {
-        double sum = biases[r][c];
-        for (int k = 0; k < values[r - 1].length; k++)
-            sum += values[r - 1][k] * weights[r][c][k];
-        return sum;
-    }
-
-    public double[] weightedSum(int r) {
-        double[] res = new double[biases[r].length];
-        for (int i = 0; i < biases[r].length; i++) {
-            res[i] = weightedSum(r,i);
-        }
-        return res;
-    }
-
-    public double error(double[] output, double[] expected) throws Exception {
-        double sum = 0.;
-        for (int i = 0; i < output.length; i++)
-            sum += Functions.cost(output[i], expected[i], cost, 0);
-        return sum / output.length;
-    }
-
-    public void printStructure() {
-        System.out.print("\r\n---------------------------------");
-        for (int r = 0; r < activations.size(); r++) {
-            System.out.print("-----");
-        }
-        System.out.print("\r\nInput layer (" + layers.get(0) + " nodes)");
-        int i;
-        for (i = 1; i < activations.size() - 1; i++) {
-            System.out.print("\r\n");
-            for (int r = 0; r < i; r++) {
-                System.out.print("----");
-            }
-            System.out.print("> Hidden layer using " + activations.get(i) + " (" + layers.get(i) + " nodes)");
-        }
-        System.out.print("\r\n");
-        for (int r = 0; r < i; r++) {
-            System.out.print("----");
-        }
-        System.out.print("> Output layer using " + activations.get(activations.size() - 1) + " ("
-                + layers.get(layers.size() - 1) + " nodes)\r\n");
-        System.out.print("Cost Function: " + cost);
-        System.out.print("\r\n---------------------------------");
-        for (int r = 0; r < activations.size(); r++) {
-            System.out.print("-----");
-        }
-        System.out.println();
-    }
-
 }

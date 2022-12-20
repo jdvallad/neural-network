@@ -5,10 +5,11 @@ public class Driver {
         DataIterator trainer = new DataIterator(100, "../mnist/training/data.ser");
         DataIterator validator = new DataIterator(100, "../mnist/validation/data.ser");
         DataIterator tester = new DataIterator(100, "../mnist/testing/data.ser");
-        nnHighLevel mnist = new nnHighLevel(28 * 28, "logLoss", "./serials/mnistDigitGenerate.ser")
+        NeuralNetwork mnist = new NeuralNetwork("logLoss", "./serials/mnistDigitGenerate.ser")
+                .add(28 * 28)
                 .add("leakyrelu", 32)
                 .add("leakyrelu", 32)
-                .add("softmax", 10).build();
+                .add("softmax", 10);
 
         Map<String, Object> input = Map.of("width", 28, "height", 28, "scale", 10.);
         Map<String, Object> output = Map.of("width", 10, "height", 1, "scale", 80.);
@@ -20,7 +21,7 @@ public class Driver {
             mnist.validate(validator);
         }
         mnist.getClassifierAccuracy(tester);
-        //mnist.showImages(tester, input, output, 50, 1000);
+        // mnist.showImages(tester, input, output, 50, 1000);
         return;
     }
 }
