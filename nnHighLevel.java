@@ -101,9 +101,9 @@ class nnHighLevel {
     public double[] compute(double[] input) throws Exception {
         NodeLayer temp = headNode;
         temp.feed(input);
-        while(temp != tailNode){
+        while (temp != tailNode) {
             temp.nextWeightLayer.compute();
-            temp=temp.nextWeightLayer.nextNodeLayer;
+            temp = temp.nextWeightLayer.nextNodeLayer;
         }
         return temp.values.clone();
     }
@@ -137,56 +137,60 @@ class nnHighLevel {
     }
 
     public void resetGradient() {
-        WeightLayer temp = headNode.nextWeightLayer;
-        while (temp != null) {
-            Functions.set(temp.biasAverages, 0);
-            Functions.set(temp.weightAverages, 0);
-            temp = temp.nextNodeLayer.nextWeightLayer;
+        NodeLayer temp = headNode;
+        while (temp != tailNode) {
+            Functions.set(temp.nextWeightLayer.biasAverages, 0);
+            Functions.set(temp.nextWeightLayer.weightAverages, 0);
+            temp = temp.nextWeightLayer.nextNodeLayer;
         }
     }
 
     public void gradientIncrement(double[] output, double[] expected) throws Exception {
-        WeightLayer current = tailNode.previousWeightLayer;
-        for (int i = 0; i < current.errors.length; i++) {
-            if (current.activation.equals("softmax")) {
-                current.errors[i] = output[i] - expected[i];
+        NodeLayer temp = tailNode;
+        for (int i = 0; i < temp.previousWeightLayer.errors.length; i++) {
+            if (temp.previousWeightLayer.activation.equals("softmax") && cost.equals("logLoss")) {
+                 temp.previousWeightLayer.errors[i] = output[i] - expected[i];
             } else {
-                current.errors[i] = Functions.cost(output[i], expected[i], cost, 1)
-                        * Functions.activate(current.weightedSum(i),
-                                current.activation, 1);
+                temp.previousWeightLayer.errors[i] = Functions.cost(output[i], expected[i], cost, 1)
+                        * Functions.activate(temp.previousWeightLayer.weightedSum(i),
+                                temp.previousWeightLayer.activation, 1);
             }
         }
-        current = current.previousNodeLayer.previousWeightLayer;
-        while (current != null) {
-            for (int i = 0; i < current.errors.length; i++) {
+        temp = temp.previousWeightLayer.previousNodeLayer;
+        while (temp != headNode) {
+            for (int i = 0; i < temp.previousWeightLayer.errors.length; i++) {
                 double sum = 0.;
-                for (int r = 0; r < current.nextNodeLayer.nextWeightLayer.biases.length; r++)
-                    sum += current.nextNodeLayer.nextWeightLayer.errors[r]
-                            * current.nextNodeLayer.nextWeightLayer.weights[r][i];
-                sum *= Functions.activate(current.weightedSum(i), current.activation, 1);
-                current.errors[i] = sum;
+                for (int r = 0; r < temp.nextWeightLayer.biases.length; r++) {
+                    sum += temp.nextWeightLayer.errors[r]
+                            * temp.nextWeightLayer.weights[r][i];
+                }
+                sum *= Functions.activate(temp.previousWeightLayer.weightedSum(i), temp.previousWeightLayer.activation,
+                        1);
+                temp.previousWeightLayer.errors[i] = sum;
             }
-            current = current.previousNodeLayer.previousWeightLayer;
+            temp = temp.previousWeightLayer.previousNodeLayer;
         }
-        current = tailNode.previousWeightLayer;
-        while (current != null) {
-            Functions.increase(current.weightAverages,
-                    Functions.multiplyMatrices(Functions.transposeMatrix(new double[][] { current.errors }),
-                            new double[][] { current.previousNodeLayer.values }));
-            current = current.previousNodeLayer.previousWeightLayer;
+        temp = tailNode;
+        while (temp != headNode) {
+            Functions.increase(temp.previousWeightLayer.biasAverages, temp.previousWeightLayer.errors);
+            Functions.increase(temp.previousWeightLayer.weightAverages,
+                    Functions.multiplyMatrices(
+                            Functions.transposeMatrix(new double[][] { temp.previousWeightLayer.errors }),
+                            new double[][] { temp.previousWeightLayer.previousNodeLayer.values }));
+            temp = temp.previousWeightLayer.previousNodeLayer;
         }
     }
 
     public void updateParameters(int batchSize, double learningRate) {
-        WeightLayer temp = headNode.nextWeightLayer;
-        while (temp != null) {
-            if (!temp.locked) {
-                Functions.increase(temp.biases,
-                        Functions.product(temp.biasAverages, -learningRate / ((double) batchSize)));
-                Functions.increase(temp.weights,
-                        Functions.product(temp.weightAverages, -learningRate / ((double) batchSize)));
+        NodeLayer temp = headNode;
+        while (temp != tailNode) {
+            if (!temp.nextWeightLayer.locked) {
+                Functions.increase(temp.nextWeightLayer.biases,
+                        Functions.product(temp.nextWeightLayer.biasAverages, -learningRate / batchSize));
+                Functions.increase(temp.nextWeightLayer.weights,
+                        Functions.product(temp.nextWeightLayer.weightAverages, -learningRate / batchSize));
             }
-            temp = temp.nextNodeLayer.nextWeightLayer;
+            temp = temp.nextWeightLayer.nextNodeLayer;
         }
         resetGradient();
         save();

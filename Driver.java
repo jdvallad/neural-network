@@ -6,8 +6,8 @@ public class Driver {
         DataIterator validator = new DataIterator(100, "../mnist/validation/data.ser");
         DataIterator tester = new DataIterator(100, "../mnist/testing/data.ser");
         nnHighLevel mnist = new nnHighLevel(28 * 28, "logLoss", "./serials/mnistDigitGenerate.ser")
-                .add("relu", 16)
-                .add("relu", 16)
+                .add("leakyrelu", 32)
+                .add("leakyrelu", 32)
                 .add("softmax", 10).build();
 
         Map<String, Object> input = Map.of("width", 28, "height", 28, "scale", 10.);

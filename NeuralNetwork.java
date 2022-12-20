@@ -256,7 +256,8 @@ public class NeuralNetwork implements Serializable {
                 values[r][c] = Functions.activate(weightedSum(r, c), activations.get(r), 0);
         for (int c = 0; c < biases[biases.length - 1].length; c++)
             if (activations.get(activations.size() - 1).equals("softmax")) {
-                values[biases.length - 1][c] = res[c] = Functions.softmax(values[biases.length - 2], weightedSum(biases.length -1, c));
+                values[biases.length - 1][c] = res[c] = Functions.softmax(values[biases.length - 2],
+                        weightedSum(biases.length - 1, c));
             } else {
                 values[biases.length - 1][c] = res[c] = Functions.activate(weightedSum(biases.length - 1, c),
                         activations.get(activations.size() - 1), 0);
@@ -269,6 +270,14 @@ public class NeuralNetwork implements Serializable {
         for (int k = 0; k < values[r - 1].length; k++)
             sum += values[r - 1][k] * weights[r][c][k];
         return sum;
+    }
+
+    public double[] weightedSum(int r) {
+        double[] res = new double[biases[r].length];
+        for (int i = 0; i < biases[r].length; i++) {
+            res[i] = weightedSum(r,i);
+        }
+        return res;
     }
 
     public double error(double[] output, double[] expected) throws Exception {
