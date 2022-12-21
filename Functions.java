@@ -70,6 +70,7 @@ public class Functions {
         }
         return output;
     }
+  
     static double sigmoid(double input, int deriv) {
         switch (deriv) {
             case 0:

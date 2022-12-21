@@ -2,7 +2,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
-public class DataIterator{
+public class DataIterator {
     public final int batchSize;
     public final int numBatches;
     private int batchCounter, index;
@@ -27,13 +27,13 @@ public class DataIterator{
         this.numBatches = data.length / batchSize;
     }
 
-    public DataPair[] nextBatch() throws Exception {
-        DataPair[] res = new DataPair[batchSize];
+    public double[][][] nextBatch() throws Exception {
+        double[][][] res = new double[batchSize][][];
         for (int i = 0; i < batchSize; i++) {
             if (reversed) {
-                res[i] = new DataPair(labels[index], data[index]);
+                res[i] = new double[][] { labels[index], data[index] };
             } else {
-                res[i] = new DataPair(data[index], labels[index]);
+                res[i] = new double[][] { data[index], labels[index] };
             }
             index++;
         }

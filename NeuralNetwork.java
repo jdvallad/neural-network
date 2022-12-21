@@ -26,7 +26,7 @@ class NeuralNetwork {
     }
 
     public NeuralNetwork add(int inputSize) throws Exception {
-        if(headNode != null | tailNode != null){
+        if (headNode != null | tailNode != null) {
             throw new Exception("You can only add an input layer once!");
         }
         headNode = new NodeLayer(inputSize);
@@ -67,12 +67,14 @@ class NeuralNetwork {
         expectedViewer.show();
         int counter = 0;
         while (iter.hasNextBatch()) {
-            for (DataPair pair : iter.nextBatch()) {
-                double[] output = compute(pair.input);
+            for (double[][] pair : iter.nextBatch()) {
+                double[] input = pair[0];
+                double[] expected = pair[1];
+                double[] output = compute(input);
                 inputViewer.draw(
                         ImageViewer.listToImage(Functions
-                                .scale(Functions.shape(pair.input, inputWidth, inputHeight,
-                                        pair.input.length / (inputHeight * inputWidth)), 255.)),
+                                .scale(Functions.shape(input, inputWidth, inputHeight,
+                                        input.length / (inputHeight * inputWidth)), 255.)),
                         inputScale);
                 outputViewer.draw(
                         ImageViewer.listToImage(Functions
@@ -81,7 +83,7 @@ class NeuralNetwork {
                         outputScale);
                 expectedViewer.draw(
                         ImageViewer.listToImage(Functions
-                                .scale(Functions.shape(pair.expected, outputWidth, outputHeight,
+                                .scale(Functions.shape(expected, outputWidth, outputHeight,
                                         output.length / (outputWidth * outputHeight)),
                                         255.)),
                         outputScale);
@@ -105,7 +107,7 @@ class NeuralNetwork {
 
     public double[] compute(double[] input) throws Exception {
         NodeLayer temp = headNode;
-        temp.feed(input);
+        Functions.set(temp.values, input);
         while (temp != tailNode) {
             temp.nextWeightLayer.compute();
             temp = temp.nextWeightLayer.nextNodeLayer;
@@ -116,8 +118,11 @@ class NeuralNetwork {
     public void validate(DataIterator validator) throws Exception {
         double totalErrorSum = 0;
         while (validator.hasNextBatch())
-            for (DataPair pair : validator.nextBatch())
-                totalErrorSum += error(compute(pair.input), pair.expected);
+            for (double[][] pair : validator.nextBatch()) {
+                double[] input = pair[0];
+                double[] expected = pair[1];
+                totalErrorSum += error(compute(input), expected);
+            }
         System.out.println("Average Cost: " + (totalErrorSum / (validator.numBatches * validator.batchSize)));
         validator.reset();
         return;
@@ -133,8 +138,11 @@ class NeuralNetwork {
     public void train(DataIterator trainer, double learningRate) throws Exception {
         resetGradient();
         while (trainer.hasNextBatch()) {
-            for (DataPair pair : trainer.nextBatch())
-                gradientIncrement(compute(pair.input), pair.expected);
+            for (double[][] pair : trainer.nextBatch()) {
+                double[] input = pair[0];
+                double[] expected = pair[1];
+                gradientIncrement(compute(input), expected);
+            }
             updateParameters(trainer.batchSize, learningRate);
         }
         trainer.reset();
@@ -202,44 +210,31 @@ class NeuralNetwork {
     }
 
     public void printStructure() {
-        System.out.print("\r\n---------------------------------");
-        /*
-         * for (int r = 0; r < activations.size(); r++) {
-         * System.out.print("-----");
-         * }
-         */
-        System.out.print("\r\nInput layer (" + headNode.numNodes + " nodes)");
+        System.out.println("--------------------------------------");
+        System.out.println("-->Input layer (" + headNode.numNodes + " nodes)");
         NodeLayer temp = headNode.nextWeightLayer.nextNodeLayer;
         while (temp != tailNode) {
-            System.out.print("\r\n");
-            System.out.print("----");
-
-            System.out.print(
-                    "> Hidden layer using " + temp.previousWeightLayer.activation + " (" + temp.numNodes + " nodes)");
+            System.out.println(
+                    "-------> Hidden layer using " + temp.previousWeightLayer.activation + " (" + temp.numNodes
+                            + " nodes)");
             temp = temp.nextWeightLayer.nextNodeLayer;
         }
-        System.out.print("\r\n");
-        System.out.print("----");
-        System.out.print("> Output layer using " + temp.previousWeightLayer.activation + " ("
-                + temp.numNodes + " nodes)\r\n");
-        System.out.print("Cost Function: " + cost);
-        /*
-         * System.out.print("\r\n---------------------------------");
-         * for (int r = 0; r < activations.size(); r++) {
-         * System.out.print("-----");
-         * }
-         */
-        System.out.println();
+        System.out.println("--> Output layer using " + temp.previousWeightLayer.activation + " ("
+                + temp.numNodes + " nodes)");
+        System.out.println("Cost Function: " + cost);
+        System.out.println("--------------------------------------");
     }
 
     public void getClassifierAccuracy(DataIterator iter) throws Exception {
         double count, correct;
         count = correct = 0;
         while (iter.hasNextBatch()) {
-            for (DataPair pair : iter.nextBatch()) {
-                double[] output = compute(pair.input);
+            for (double[][] pair : iter.nextBatch()) {
+                double[] input = pair[0];
+                double[] expected = pair[1];
+                double[] output = compute(input);
                 count++;
-                if (Functions.collapse(output) == Functions.collapse(pair.expected))
+                if (Functions.collapse(output) == Functions.collapse(expected))
                     correct++;
             }
         }

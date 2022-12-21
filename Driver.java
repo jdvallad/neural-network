@@ -21,7 +21,7 @@ public class Driver {
             mnist.validate(validator);
         }
         mnist.getClassifierAccuracy(tester);
-        // mnist.showImages(tester, input, output, 50, 1000);
+        mnist.showImages(tester, input, output, 50, 1000);
         return;
     }
 }

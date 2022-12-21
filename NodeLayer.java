@@ -13,20 +13,4 @@ public class NodeLayer {
         }
     }
 
-    public NodeLayer(NodeLayer n) {
-        this.numNodes = n.numNodes;
-        this.nextWeightLayer = n.nextWeightLayer;
-        this.previousWeightLayer = n.previousWeightLayer;
-        this.values = new double[numNodes];
-        for (int i = 0; i < this.numNodes; i++) {
-            this.values[i] = n.values[i];
-        }
-    }
-
-    public void feed(double[] input) {
-        for (int i = 0; i < this.numNodes; i++) {
-            this.values[i] = input[i];
-        }
-    }
-
 }

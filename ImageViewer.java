@@ -6,9 +6,6 @@ import java.awt.image.DataBufferByte;
 import java.awt.image.DataBufferInt;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 public class ImageViewer {
     private final JFrame frame;
     private JLabel label;
