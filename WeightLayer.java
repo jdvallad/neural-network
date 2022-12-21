@@ -36,7 +36,7 @@ public class WeightLayer {
     public void compute() throws Exception {
         for (int r = 0; r < outputNodes; r++) {
             if (this.activation.equals("softmax")) {
-                nextNodeLayer.values[r] = Functions.softmax(this.previousNodeLayer.values, weightedSum(r));
+                nextNodeLayer.values[r] = Functions.softmax(this.weightedSum(), weightedSum(r));
             } else {
                 nextNodeLayer.values[r] = Functions.activate(weightedSum(r), this.activation, 0);
             }
