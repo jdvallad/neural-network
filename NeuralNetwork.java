@@ -67,7 +67,7 @@ class NeuralNetwork {
         expectedViewer.show();
         int counter = 0;
         while (iter.hasNextBatch()) {
-            for (double[][] pair : iter.nextBatch()) {
+            for (Matrix[] pair : iter.nextBatch()) {
                 double[] input = pair[0];
                 double[] expected = pair[1];
                 double[] output = compute(input);

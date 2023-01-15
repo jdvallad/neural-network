@@ -7,7 +7,7 @@ public class DataIterator {
     public final int numBatches;
     private int batchCounter, index;
     private boolean hasNextBatch;
-    private final double[][] data, labels;
+    private final Matrix[] data, labels;
     private boolean reversed;
 
     public DataIterator(int batchSize, String filePath) throws IOException, ClassNotFoundException {
@@ -22,18 +22,24 @@ public class DataIterator {
         temp = (double[][][]) in.readObject();
         in.close();
         fileIn.close();
-        data = temp[0].clone();
-        labels = temp[1].clone();
+        data = new Matrix[temp[0].length];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = Matrix.create(temp[0][i]);
+        }
+        labels = new Matrix[temp[1].length];
+        for (int i = 0; i < labels.length; i++) {
+            labels[i] = Matrix.create(temp[1][i]);
+        }
         this.numBatches = data.length / batchSize;
     }
 
-    public double[][][] nextBatch() throws Exception {
-        double[][][] res = new double[batchSize][][];
+    public Matrix[][] nextBatch() throws Exception {
+        Matrix[][] res = new Matrix[batchSize][];
         for (int i = 0; i < batchSize; i++) {
             if (reversed) {
-                res[i] = new double[][] { labels[index], data[index] };
+                res[i] = new Matrix[] { labels[index], data[index] };
             } else {
-                res[i] = new double[][] { data[index], labels[index] };
+                res[i] = new Matrix[] { data[index], labels[index] };
             }
             index++;
         }
