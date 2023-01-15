@@ -10,7 +10,7 @@ public class DataIterator {
     private final Matrix[] data, labels;
     private boolean reversed;
 
-    public DataIterator(int batchSize, String filePath) throws IOException, ClassNotFoundException {
+    public DataIterator(int batchSize, String filePath) throws Exception {
         this.batchSize = batchSize;
         reversed = false;
         batchCounter = 0;

@@ -4,83 +4,113 @@ public class Matrix {
     private double[] cells;
     private int rows, columns;
 
-    private Matrix(int rows, int columns) {
+    // Matrix creation methods
+
+    private Matrix() {
+    }
+
+    private Matrix(int rows, int columns) throws Exception {
+        if (rows < 1 || columns < 1) {
+            throw new Exception();
+        }
         this.rows = rows;
         this.columns = columns;
         this.cells = new double[this.rows * this.columns];
     }
 
-    private Matrix(double[] cells) {
+    private Matrix(double[] cells) throws Exception {
+        if (cells == null) {
+            throw new Exception();
+        }
         this.cells = cells.clone();
         this.rows = 1;
         this.columns = cells.length;
     }
 
-    private Matrix(double[] cells, int rows, int columns) {
+    private Matrix(double[] cells, int rows, int columns) throws Exception {
+        if (cells == null || rows < 1 || columns < 1 || rows * columns != cells.length) {
+            throw new Exception();
+        }
         this.cells = cells.clone();
         this.rows = rows;
         this.columns = columns;
     }
 
-    private Matrix(int rows, int columns, double[] cells) {
+    private Matrix(int rows, int columns, double[] cells) throws Exception {
+        if (cells == null || rows < 1 || columns < 1 || rows * columns != cells.length) {
+            throw new Exception();
+        }
         this.cells = cells.clone();
         this.rows = rows;
         this.columns = columns;
     }
 
-    public static Matrix create(int rows, int columns) {
+    public static Matrix create(int rows, int columns) throws Exception {
         return new Matrix(rows, columns);
     }
 
-    public static Matrix create(double[] cells) {
+    public static Matrix create(double[] cells) throws Exception {
         return new Matrix(cells);
     }
 
-    public static Matrix create(double[] cells, int rows, int columns) {
+    public static Matrix create(double[] cells, int rows, int columns) throws Exception {
         return new Matrix(cells, rows, columns);
     }
 
-    public static Matrix create(int rows, int columns, double[] cells) {
+    public static Matrix create(int rows, int columns, double[] cells) throws Exception {
         return new Matrix(rows, columns, cells);
     }
 
+    public static Matrix identity(int n) {
+        Matrix output = new Matrix();
+        output.rows = n;
+        output.columns = n;
+        output.cells = new double[n * n];
+        for (int i = 0; i < n; i++) {
+            output.cells[i * (n + 1)] = 1;
+        }
+        return output;
+    }
+
     public Matrix clone() {
-        return Matrix.create(this.getCells(), this.getRows(), this.getColumns());
+        Matrix output = new Matrix();
+        output.cells = this.cells.clone();
+        output.rows = this.rows;
+        output.columns = this.columns;
+        return output;
     }
 
-    public void set(int row, int col, double input) {
-        this.cells[this.columns * row + col] = input;
-    }
-
-    public void set(String wildcard, int col, Matrix input) {
-        if (wildcard.equals("*")) {
-            for (int i = 0; i < this.rows; i++) {
-                this.set(i, col, input.get(i, 1));
+    // Method that prints Matrix to screen e.g.
+    ///////// [1.0,2.0,3.0]
+    ///////// [4.0,5.0,6.0]
+    // matrix([7.0,8.0,9.0])
+    public void print() throws Exception {
+        for (int r = 0; r < this.rows - 1; r++) {
+            System.out.print("       [");
+            for (int c = 0; c < this.columns - 1; c++) {
+                System.out.print("" + this.get(r, c) + ",");
             }
+            System.out.print("" + this.get(r, this.columns - 1) + "]\r\n");
         }
+        System.out.print("Matrix([");
+        for (int c = 0; c < this.columns - 1; c++) {
+            System.out.print("" + this.get(this.rows - 1, c) + ",");
+        }
+        System.out.print("" + this.get(this.rows - 1, this.columns - 1) + "])\r\n\r\n");
     }
 
-    public void set(int row, String wildcard, Matrix input) {
-        if (wildcard.equals("*")) {
-            for (int i = 0; i < this.columns; i++) {
-                this.set(row, i, input.get(1, i));
-            }
+    // Getter methods, used to access data about the Matrix without modifying it.
+    public double get(int row, int col) throws Exception {
+        if (row < 0 || row >= this.rows || col < 0 || col >= this.columns) {
+            throw new Exception();
         }
-    }
-
-    public void set(String wildcard, String otherWildcard, Matrix input) {
-        if (wildcard.equals("*") && otherWildcard.equals("*")) {
-            for (int i = 0; i < this.cells.length; i++) {
-                this.cells[i] = input.cells[i];
-            }
-        }
-    }
-
-    public double get(int row, int col) {
         return this.cells[this.columns * row + col];
     }
 
-    public Matrix get(int row, String wildcard) {
+    public Matrix get(int row, String wildcard) throws Exception {
+        if (row < 0 || row >= this.rows) {
+            throw new Exception();
+        }
         if (wildcard.equals("*")) {
             double[] output = new double[this.columns];
             for (int i = 0; i < output.length; i++) {
@@ -91,7 +121,10 @@ public class Matrix {
         return null;
     }
 
-    public Matrix get(String wildcard, int col) {
+    public Matrix get(String wildcard, int col) throws Exception {
+        if (col < 0 || col >= this.columns) {
+            throw new Exception();
+        }
         if (wildcard.equals("*")) {
             double[] output = new double[this.rows];
             for (int i = 0; i < output.length; i++) {
@@ -137,6 +170,7 @@ public class Matrix {
         return output;
     }
 
+    // Boolean accessor methods
     public boolean isRowVector() {
         return this.rows == 1;
     }
@@ -149,108 +183,134 @@ public class Matrix {
         return isColumnVector() || isRowVector();
     }
 
-    public Matrix setTranspose() {
-        int temp = this.rows;
-        this.rows = this.columns;
-        this.columns = temp;
-        return this;
-    }
-
-    public Matrix transpose() {
-        return this.clone().setTranspose();
-    }
-
-    public Matrix setShape(int rows, int columns) {
-        this.rows = rows;
-        this.columns = columns;
-        return this;
-    }
-
-    public Matrix shape(int rows, int columns) {
-        return this.clone().setShape(rows, columns);
-    }
-
-    public Matrix setComponentProduct(Matrix input) {
-        for (int i = 0; i < this.cells.length; i++) {
-            this.cells[i] *= input.cells[i];
+    // These are the matrix operation methods
+    // must have 2 or 4 implementations.
+    //
+    public Matrix set(String wildcard, String otherWildcard, Matrix b) throws Exception {
+        if (this.rows != b.rows || this.columns != b.columns) {
+            throw new Exception();
         }
-        return this;
-    }
-
-    public Matrix componentProduct(Matrix input) {
-        return this.clone().setComponentProduct(input);
-    }
-
-    public Matrix setAdd(Matrix input) {
-        for (int i = 0; i < this.cells.length; i++) {
-            this.cells[i] += input.cells[i];
-        }
-        return this;
-    }
-
-    public Matrix add(Matrix input) {
-        return this.clone().setAdd(input);
-    }
-
-    public Matrix multiply(Matrix input) {
-        if (this == input) {
-            return this.multiply(this.clone());
-        }
-        Matrix output = new Matrix(this.rows, input.columns);
-        for (int i = 0; i < this.rows; i++) {
-            for (int j = 0; j < input.columns; j++) {
-                for (int k = 0; k < this.columns; k++) { // this.columns = input.rows (hopefully)
-                    // output[i,j] += this[i,k] * input[k,j]
-                    output.set(i, j, output.get(i, j) + this.get(i, k) * input.get(k, j));
-                }
+        if (wildcard.equals("*") && otherWildcard.equals("*")) {
+            for (int i = 0; i < this.cells.length; i++) {
+                this.cells[i] = b.cells[i];
             }
+            return this;
         }
-        return output;
+        return null;
     }
 
-    public Matrix outerProduct(Matrix input) {
-        if (this == input) {
-            return this.outerProduct(this.clone());
-        }
-        this.setTranspose();
-        Matrix output = this.multiply(input);
-        this.setTranspose();
-        return output;
+    public Matrix set(Matrix a, String wildcard, String otherWildcard, Matrix b) throws Exception {
+        return this.set(wildcard, otherWildcard, b);
     }
 
-    public Matrix innerProduct(Matrix input) {
-        if (this == input) {
-            return this.innerProduct(this.clone());
-        }
-        input.setTranspose();
-        Matrix output = this.multiply(input);
-        input.setTranspose();
-        return output;
+    public static Matrix setClone(Matrix a, String wildcard, String otherWildcard, Matrix b) throws Exception {
+        return Matrix.create(a.rows, a.columns).set(a, wildcard, otherWildcard, b);
     }
 
-    public Matrix setScalarProduct(double input) {
+    public Matrix setClone(String wildcard, String otherWildcard, Matrix b) throws Exception {
+        return Matrix.setClone(this, wildcard, otherWildcard, b);
+    }
+
+    //
+
+    public Matrix set(int row, int col, double b) throws Exception {
+        if (row < 0 || row >= this.rows || col < 0 || col >= this.columns) {
+            throw new Exception();
+        }
+        this.cells[this.columns * row + col] = b;
+        return this;
+    }
+
+    public Matrix set(Matrix a, int row, int col, double b) throws Exception {
+        return this.set("*", "*", a).set(row, col, b);
+    }
+
+    public static Matrix setClone(Matrix a, int row, int col, double b) throws Exception {
+        return Matrix.create(a.rows, a.columns).set(a, row, col, b);
+    }
+
+    public Matrix setClone(int row, int col, double b) throws Exception {
+        return Matrix.setClone(this, row, col, b);
+    }
+
+    //
+
+    public Matrix set(int row, String wildcard, Matrix b) throws Exception {
+        if (row < 0 || row >= this.rows) {
+            throw new Exception();
+        }
+        if (wildcard.equals("*")) {
+            for (int i = 0; i < this.columns; i++) {
+                this.set(row, i, b.get(1, i));
+            }
+            return this;
+        }
+        return null;
+    }
+
+    public Matrix set(Matrix a, int row, String wildcard, Matrix b) throws Exception {
+        return this.set("*", "*", a).set(row, wildcard, b);
+    }
+
+    public static Matrix setClone(Matrix a, int row, String wildcard, Matrix b) throws Exception {
+        return Matrix.create(a.rows, a.columns).set(a, row, wildcard, b);
+    }
+
+    public Matrix setClone(int row, String wildcard, Matrix b) throws Exception {
+        return Matrix.setClone(this, row, wildcard, b);
+    }
+
+    //
+
+    public Matrix set(String wildcard, int col, Matrix b) throws Exception {
+        if (col < 0 || col >= this.columns) {
+            throw new Exception();
+        }
+        if (wildcard.equals("*")) {
+            for (int i = 0; i < this.rows; i++) {
+                this.set(i, col, b.get(i, 1));
+            }
+            return this;
+        }
+        return null;
+    }
+
+    public Matrix set(Matrix a, String wildcard, int col, Matrix b) throws Exception {
+        return this.set("*", "*", a).set(wildcard, col, b);
+    }
+
+    public static Matrix setClone(Matrix a, String wildcard, int col, Matrix b) throws Exception {
+        return Matrix.create(a.rows, a.columns).set(a, wildcard, col, b);
+    }
+
+    public Matrix setClone(String wildcard, int col, Matrix b) throws Exception {
+        return Matrix.setClone(this, wildcard, col, b);
+    }
+
+    //
+
+    public Matrix zero() {
         for (int i = 0; i < this.cells.length; i++) {
-            this.cells[i] *= input;
+            this.cells[i] = 0;
         }
         return this;
     }
 
-    public Matrix scalarProduct(double input) {
-        return this.clone().setScalarProduct(input);
+    public Matrix zero(Matrix a) {
+        return this.zero();
     }
 
-    public Matrix setScalarAdd(double input) {
-        for (int i = 0; i < this.cells.length; i++) {
-            this.cells[i] += input;
-        }
-        return this;
+    public static Matrix zeroClone(Matrix a) throws Exception {
+        return Matrix.create(a.rows, a.columns).zero(a);
     }
 
-    public Matrix scalarAdd(double input) {
-        return this.clone().setScalarAdd(input);
+    public Matrix zeroClone() throws Exception {
+        return Matrix.zeroClone(this);
     }
 
-    public Matrix setRandomize(int seed) {
+    //
+
+    public Matrix randomize(int seed) {
         Random rand = new Random(seed);
         for (int i = 0; i < this.cells.length; i++) {
             this.cells[i] = rand.nextGaussian();
@@ -258,25 +318,249 @@ public class Matrix {
         return this;
     }
 
-    public Matrix setZero() {
+    public Matrix randomize(Matrix a, int seed) {
+        return this.randomize(seed);
+    }
+
+    public static Matrix randomizeClone(Matrix a, int seed) throws Exception {
+        return Matrix.create(a.rows, a.columns).randomize(a, seed);
+    }
+
+    public Matrix randomizeClone(int seed) throws Exception {
+        return Matrix.randomizeClone(this, seed);
+    }
+
+    //
+
+    public Matrix transpose() {
+        int temp = this.rows;
+        this.rows = this.columns;
+        this.columns = temp;
+        return this;
+    }
+
+    public Matrix transpose(Matrix a) throws Exception {
+        return this.transpose().set("*", "*", a).transpose();
+
+    }
+
+    public static Matrix transposeClone(Matrix a) throws Exception {
+        return Matrix.create(a.columns, a.rows).transpose(a);
+    }
+
+    public Matrix transposeClone() throws Exception {
+        return Matrix.transposeClone(this);
+    }
+
+    //
+
+    public Matrix add(Matrix b) throws Exception {
+        if (this.rows != b.rows || this.columns != b.columns) {
+            throw new Exception();
+        }
         for (int i = 0; i < this.cells.length; i++) {
-            this.cells[i] = 0;
+            this.cells[i] += b.cells[i];
         }
         return this;
     }
 
-    public void print() {
-        for (int r = 0; r < this.rows - 1; r++) {
-            System.out.print("       [");
-            for (int c = 0; c < this.columns - 1; c++) {
-                System.out.print("" + this.get(r, c) + ",");
-            }
-            System.out.print("" + this.get(r, this.columns - 1) + "]\r\n");
-        }
-        System.out.print("Matrix([");
-        for (int c = 0; c < this.columns - 1; c++) {
-            System.out.print("" + this.get(this.rows - 1, c) + ",");
-        }
-        System.out.print("" + this.get(this.rows - 1, this.columns - 1) + "])\r\n\r\n");
+    public Matrix add(Matrix a, Matrix b) throws Exception {
+        return this.set("*", "*", a).add(b);
     }
+
+    public static Matrix addClone(Matrix a, Matrix b) throws Exception {
+        return Matrix.create(a.rows, a.columns).add(a, b);
+    }
+
+    public Matrix addClone(Matrix b) throws Exception {
+        return Matrix.addClone(this, b);
+    }
+
+    //
+
+    public Matrix elementProduct(Matrix b) throws Exception {
+        if (this.rows != b.rows || this.columns != b.columns) {
+            throw new Exception();
+        }
+        for (int i = 0; i < this.cells.length; i++) {
+            this.cells[i] *= b.cells[i];
+        }
+        return this;
+    }
+
+    public Matrix elementProduct(Matrix a, Matrix b) throws Exception {
+        return this.set("*", "*", a).elementProduct(b);
+    }
+
+    public static Matrix elementProductClone(Matrix a, Matrix b) throws Exception {
+        return Matrix.create(a.rows, a.columns).elementProduct(a, b);
+    }
+
+    public Matrix elementProductClone(Matrix b) throws Exception {
+        return Matrix.elementProductClone(this, b);
+    }
+
+    //
+
+    public Matrix product(double b) {
+        for (int i = 0; i < this.cells.length; i++) {
+            this.cells[i] *= b;
+        }
+        return this;
+    }
+
+    public Matrix product(Matrix a, double b) throws Exception {
+        return this.set("*", "*", a).product(b);
+    }
+
+    public static Matrix productClone(Matrix a, double b) throws Exception {
+        return Matrix.create(a.rows, a.columns).product(a, b);
+    }
+
+    public Matrix productClone(double b) throws Exception {
+        return Matrix.productClone(this, b);
+    }
+
+    //
+
+    public Matrix add(double b) {
+        for (int i = 0; i < this.cells.length; i++) {
+            this.cells[i] += b;
+        }
+        return this;
+    }
+
+    public Matrix add(Matrix a, double b) throws Exception {
+        return this.set("*", "*", a).add(b);
+    }
+
+    public static Matrix addClone(Matrix a, double b) throws Exception {
+        return Matrix.create(a.rows, a.columns).add(a, b);
+    }
+
+    public Matrix addClone(double b) throws Exception {
+        return Matrix.addClone(this, b);
+    }
+
+    //
+
+    public Matrix shape(int rows, int cols) throws Exception {
+        if (rows < 1 || columns < 1 || rows * columns != cells.length) {
+            throw new Exception();
+        }
+        this.rows = rows;
+        this.columns = cols;
+        return this;
+    }
+
+    public Matrix shape(Matrix a, int rows, int cols) throws Exception {
+        return this.set("*", "*", a).shape(rows, cols);
+    }
+
+    public static Matrix shapeClone(Matrix a, int rows, int cols) throws Exception {
+        return Matrix.create(a.rows, a.columns).shape(a, rows, cols);
+    }
+
+    public Matrix shapeClone(int rows, int cols) throws Exception {
+        return Matrix.shapeClone(this, rows, cols);
+    }
+
+    //
+
+    public Matrix product(Matrix b) throws Exception {
+        // Don't use this unless you know THIS and b are both
+        // square matrices of the same size
+        if (this.rows != this.columns || b.rows != b.columns || this.rows != b.columns) {
+            throw new Exception();
+        }
+        return this.set("*", "*", this.productClone(b));
+    }
+
+    public Matrix product(Matrix a, Matrix b) throws Exception {
+        if (a.columns != b.rows) {
+            throw new Exception();
+        }
+        this.zero();
+        for (int i = 0; i < a.rows; i++) {
+            for (int j = 0; j < b.columns; j++) {
+                for (int k = 0; k < a.columns; k++) {
+                    this.set(i, j, this.get(i, j) + a.get(i, k) * b.get(k, j));
+                }
+            }
+        }
+        return this;
+    }
+
+    public static Matrix productClone(Matrix a, Matrix b) throws Exception {
+        return Matrix.create(a.rows, b.columns).product(a, b);
+    }
+
+    public Matrix productClone(Matrix b) throws Exception {
+        return Matrix.productClone(this, b);
+    }
+
+    //
+
+    public Matrix outerProduct(Matrix b) throws Exception {
+        // Don't use this unless you know THIS and b are both
+        // square matrices of the same size
+        if (this.rows != this.columns || b.rows != b.columns || this.rows != b.columns) {
+            throw new Exception();
+        }
+        return this.set("*", "*", this.outerProductClone(b));
+    }
+
+    public Matrix outerProduct(Matrix a, Matrix b) throws Exception {
+        if (a.rows != b.rows) {
+            throw new Exception();
+        }
+        if (a == b) {
+            return this.outerProduct(a, a.clone());
+        }
+        a.transpose();
+        this.product(a, b);
+        a.transpose();
+        return this;
+    }
+
+    public static Matrix outerProductClone(Matrix a, Matrix b) throws Exception {
+        return Matrix.create(a.columns, b.columns).outerProduct(a, b);
+    }
+
+    public Matrix outerProductClone(Matrix b) throws Exception {
+        return Matrix.outerProductClone(this, b);
+    }
+
+    //
+
+    public Matrix innerProduct(Matrix b) throws Exception {
+        // Don't use this unless you know THIS and b are both
+        // square matrices of the same size
+        if (this.rows != this.columns || b.rows != b.columns || this.rows != b.columns) {
+            throw new Exception();
+        }
+        return this.set("*", "*", this.innerProductClone(b));
+    }
+
+    public Matrix innerProduct(Matrix a, Matrix b) throws Exception {
+        if (a.columns != b.columns) {
+            throw new Exception();
+        }
+        if (a == b) {
+            return this.innerProduct(a, a.clone());
+        }
+        b.transpose();
+        this.product(a, b);
+        b.transpose();
+        return this;
+    }
+
+    public static Matrix innerProductClone(Matrix a, Matrix b) throws Exception {
+        return Matrix.create(a.rows, b.rows).outerProduct(a, b);
+    }
+
+    public Matrix innerProductClone(Matrix b) throws Exception {
+        return Matrix.innerProductClone(this, b);
+    }
+
 }
