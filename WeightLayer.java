@@ -17,18 +17,20 @@ public class WeightLayer {
         this.biases = new double[this.outputNodes];
         this.biasAverages = new double[this.outputNodes];
         this.errors = new double[this.outputNodes];
-        this.weights = new double[this.outputNodes][this.inputNodes];
-        this.weightAverages = new double[this.outputNodes][this.inputNodes];
-        for (int r = 0; r < this.outputNodes; r++) {
-            this.biases[r] = Functions.heParameterInitialize(this.previousNodeLayer.numNodes);
-            this.weights[r] = new double[inputNodes];
-            this.biasAverages[r] = 0;
-            this.errors[r] = 0;
-            this.weightAverages[r] = new double[inputNodes];
-            for (int c = 0; c < this.inputNodes; c++) {
+        this.weights = new double[this.inputNodes][this.outputNodes];
+        this.weightAverages = new double[this.inputNodes][this.outputNodes];
+        for (int r = 0; r < this.inputNodes; r++) {
+            this.weights[r] = new double[this.outputNodes];
+            this.weightAverages[r] = new double[this.outputNodes];
+            for (int c = 0; c < this.outputNodes; c++) {
                 this.weights[r][c] = Functions.heParameterInitialize(this.previousNodeLayer.numNodes);
                 this.weightAverages[r][c] = 0;
             }
+        }
+        for (int r = 0; r < this.outputNodes; r++) {
+            this.biases[r] = Functions.heParameterInitialize(this.previousNodeLayer.numNodes);
+            this.biasAverages[r] = 0;
+            this.errors[r] = 0;
         }
         return;
     }
@@ -47,7 +49,7 @@ public class WeightLayer {
     public double weightedSum(int index) {
         double sum = this.biases[index];
         for (int i = 0; i < inputNodes; i++) {
-            sum += previousNodeLayer.values[i] * this.weights[index][i];
+            sum += previousNodeLayer.values[i] * this.weights[i][index];
         }
         return sum;
     }

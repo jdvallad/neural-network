@@ -175,7 +175,7 @@ class NeuralNetwork {
                 double sum = 0.;
                 for (int r = 0; r < temp.nextWeightLayer.biases.length; r++) {
                     sum += temp.nextWeightLayer.errors[r]
-                            * temp.nextWeightLayer.weights[r][i];
+                            * temp.nextWeightLayer.weights[i][r];
                 }
                 sum *= Functions.activate(temp.previousWeightLayer.weightedSum(i), temp.previousWeightLayer.activation,
                         1);
@@ -188,8 +188,9 @@ class NeuralNetwork {
             Functions.increase(temp.previousWeightLayer.biasAverages, temp.previousWeightLayer.errors);
             Functions.increase(temp.previousWeightLayer.weightAverages,
                     Functions.multiplyMatrices(
-                            Functions.transposeMatrix(new double[][] { temp.previousWeightLayer.errors }),
-                            new double[][] { temp.previousWeightLayer.previousNodeLayer.values }));
+                            Functions.transposeMatrix(
+                                    new double[][] { temp.previousWeightLayer.previousNodeLayer.values }),
+                            new double[][] { temp.previousWeightLayer.errors }));
             temp = temp.previousWeightLayer.previousNodeLayer;
         }
     }
