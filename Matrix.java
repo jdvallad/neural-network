@@ -2,59 +2,59 @@ import java.util.Random;
 
 public class Matrix {
     private double[] cells;
-    private int width, height;
+    private int rows, columns;
 
-    private Matrix(int width, int height) {
-        this.width = width;
-        this.height = height;
-        this.cells = new double[width * height];
+    private Matrix(int rows, int columns) {
+        this.rows = rows;
+        this.columns = columns;
+        this.cells = new double[this.rows * this.columns];
     }
 
     private Matrix(double[] cells) {
         this.cells = cells.clone();
-        this.width = cells.length;
-        this.height = 1;
+        this.rows = 1;
+        this.columns = cells.length;
     }
 
-    private Matrix(double[] cells, int width, int height) {
+    private Matrix(double[] cells, int rows, int columns) {
         this.cells = cells.clone();
-        this.width = width;
-        this.height = height;
+        this.rows = rows;
+        this.columns = columns;
     }
 
-    private Matrix(int width, int height, double[] cells) {
+    private Matrix(int rows, int columns, double[] cells) {
         this.cells = cells.clone();
-        this.width = width;
-        this.height = height;
+        this.rows = rows;
+        this.columns = columns;
     }
 
-    public static Matrix create(int width, int height) {
-        return new Matrix(width, height);
+    public static Matrix create(int rows, int columns) {
+        return new Matrix(rows, columns);
     }
 
     public static Matrix create(double[] cells) {
         return new Matrix(cells);
     }
 
-    public static Matrix create(double[] cells, int width, int height) {
-        return new Matrix(cells, width, height);
+    public static Matrix create(double[] cells, int rows, int columns) {
+        return new Matrix(cells, rows, columns);
     }
 
-    public static Matrix create(int width, int height, double[] cells) {
-        return new Matrix(width, height, cells);
+    public static Matrix create(int rows, int columns, double[] cells) {
+        return new Matrix(rows, columns, cells);
     }
 
     public Matrix clone() {
-        return new Matrix(this.getCells(), this.getWidth(), this.getHeight());
+        return Matrix.create(this.getCells(), this.getRows(), this.getColumns());
     }
 
     public void set(int row, int col, double input) {
-        this.cells[this.width * row + col] = input;
+        this.cells[this.columns * row + col] = input;
     }
 
     public void set(String wildcard, int col, Matrix input) {
         if (wildcard.equals("*")) {
-            for (int i = 0; i < this.width; i++) {
+            for (int i = 0; i < this.rows; i++) {
                 this.set(i, col, input.get(i, 1));
             }
         }
@@ -62,7 +62,7 @@ public class Matrix {
 
     public void set(int row, String wildcard, Matrix input) {
         if (wildcard.equals("*")) {
-            for (int i = 0; i < this.height; i++) {
+            for (int i = 0; i < this.columns; i++) {
                 this.set(row, i, input.get(1, i));
             }
         }
@@ -77,27 +77,27 @@ public class Matrix {
     }
 
     public double get(int row, int col) {
-        return this.cells[this.width * row + col];
+        return this.cells[this.columns * row + col];
     }
 
     public Matrix get(int row, String wildcard) {
         if (wildcard.equals("*")) {
-            double[] output = new double[this.width];
+            double[] output = new double[this.columns];
             for (int i = 0; i < output.length; i++) {
                 output[i] = this.get(row, i);
             }
-            return new Matrix(output, this.width, 1);
+            return new Matrix(output, 1, this.columns);
         }
         return null;
     }
 
     public Matrix get(String wildcard, int col) {
         if (wildcard.equals("*")) {
-            double[] output = new double[this.height];
+            double[] output = new double[this.rows];
             for (int i = 0; i < output.length; i++) {
                 output[i] = this.get(i, col);
             }
-            return new Matrix(output, 1, this.height);
+            return new Matrix(output, this.rows, 1);
         }
         return null;
     }
@@ -113,12 +113,12 @@ public class Matrix {
         return this.cells.clone();
     }
 
-    public int getWidth() {
-        return this.width;
+    public int getRows() {
+        return this.rows;
     }
 
-    public int getHeight() {
-        return this.height;
+    public int getColumns() {
+        return this.columns;
     }
 
     public double getSum() {
@@ -138,11 +138,11 @@ public class Matrix {
     }
 
     public boolean isRowVector() {
-        return this.height == 1;
+        return this.rows == 1;
     }
 
     public boolean isColumnVector() {
-        return this.width == 1;
+        return this.columns == 1;
     }
 
     public boolean isVector() {
@@ -150,10 +150,9 @@ public class Matrix {
     }
 
     public Matrix setTranspose() {
-
-        int temp = this.width;
-        this.width = this.height;
-        this.height = temp;
+        int temp = this.rows;
+        this.rows = this.columns;
+        this.columns = temp;
         return this;
     }
 
@@ -161,14 +160,14 @@ public class Matrix {
         return this.clone().setTranspose();
     }
 
-    public Matrix setShape(int width, int height) {
-        this.width = width;
-        this.height = height;
+    public Matrix setShape(int rows, int columns) {
+        this.rows = rows;
+        this.columns = columns;
         return this;
     }
 
-    public Matrix shape(int width, int height) {
-        return this.clone().setShape(width, height);
+    public Matrix shape(int rows, int columns) {
+        return this.clone().setShape(rows, columns);
     }
 
     public Matrix setComponentProduct(Matrix input) {
@@ -194,10 +193,13 @@ public class Matrix {
     }
 
     public Matrix multiply(Matrix input) {
-        Matrix output = new Matrix(this.width, input.height);
-        for (int i = 0; i < this.width; i++) {
-            for (int j = 0; j < input.height; j++) {
-                for (int k = 0; k < this.height; k++) { // this.height = input.width (hopefully)
+        if (this == input) {
+            return this.multiply(this.clone());
+        }
+        Matrix output = new Matrix(this.rows, input.columns);
+        for (int i = 0; i < this.rows; i++) {
+            for (int j = 0; j < input.columns; j++) {
+                for (int k = 0; k < this.columns; k++) { // this.columns = input.rows (hopefully)
                     // output[i,j] += this[i,k] * input[k,j]
                     output.set(i, j, output.get(i, j) + this.get(i, k) * input.get(k, j));
                 }
@@ -206,17 +208,23 @@ public class Matrix {
         return output;
     }
 
-    public Matrix innerProduct(Matrix input) {
-        this.transpose();
+    public Matrix outerProduct(Matrix input) {
+        if (this == input) {
+            return this.outerProduct(this.clone());
+        }
+        this.setTranspose();
         Matrix output = this.multiply(input);
-        this.transpose();
+        this.setTranspose();
         return output;
     }
 
-    public Matrix outerProduct(Matrix input) {
-        input.transpose();
+    public Matrix innerProduct(Matrix input) {
+        if (this == input) {
+            return this.innerProduct(this.clone());
+        }
+        input.setTranspose();
         Matrix output = this.multiply(input);
-        input.transpose();
+        input.setTranspose();
         return output;
     }
 
@@ -255,5 +263,20 @@ public class Matrix {
             this.cells[i] = 0;
         }
         return this;
+    }
+
+    public void print() {
+        for (int r = 0; r < this.rows - 1; r++) {
+            System.out.print("       [");
+            for (int c = 0; c < this.columns - 1; c++) {
+                System.out.print("" + this.get(r, c) + ",");
+            }
+            System.out.print("" + this.get(r, this.columns - 1) + "]\r\n");
+        }
+        System.out.print("Matrix([");
+        for (int c = 0; c < this.columns - 1; c++) {
+            System.out.print("" + this.get(this.rows - 1, c) + ",");
+        }
+        System.out.print("" + this.get(this.rows - 1, this.columns - 1) + "])\r\n\r\n");
     }
 }

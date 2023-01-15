@@ -5,7 +5,7 @@ public class Driver {
         DataIterator trainer = new DataIterator(100, "../mnist/training/data.ser");
         DataIterator validator = new DataIterator(100, "../mnist/validation/data.ser");
         DataIterator tester = new DataIterator(100, "../mnist/testing/data.ser");
-        NeuralNetwork mnist = new NeuralNetwork("logLoss", "./serials/mnistDigitGenerate.ser")
+        NeuralNetwork mnist = new NeuralNetwork("logLoss", "./serials/mnistDigitClassify.ser")
                 .add(28 * 28)
                 .add("leakyrelu", 32)
                 .add("leakyrelu", 32)
