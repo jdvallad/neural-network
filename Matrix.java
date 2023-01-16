@@ -3,7 +3,7 @@ import java.util.Random;
 public class Matrix {
     private double[] cells;
     private int rows, columns;
-
+    Random rand = new Random();
     // Matrix creation methods
 
     private Matrix() {
@@ -168,6 +168,16 @@ public class Matrix {
             output *= cell;
         }
         return output;
+    }
+
+    public int maxIndex() {
+        int maxIndex = 0;
+        for (int i = 0; i < this.cells.length; i++) {
+            if (this.cells[i] > this.cells[maxIndex]) {
+                maxIndex = i;
+            }
+        }
+        return maxIndex;
     }
 
     // Boolean accessor methods
@@ -544,6 +554,8 @@ public class Matrix {
 
     public Matrix innerProduct(Matrix a, Matrix b) throws Exception {
         if (a.columns != b.columns) {
+            a.print();
+            b.print();
             throw new Exception();
         }
         if (a == b) {
@@ -556,7 +568,7 @@ public class Matrix {
     }
 
     public static Matrix innerProductClone(Matrix a, Matrix b) throws Exception {
-        return Matrix.create(a.rows, b.rows).outerProduct(a, b);
+        return Matrix.create(a.rows, b.rows).innerProduct(a, b);
     }
 
     public Matrix innerProductClone(Matrix b) throws Exception {
@@ -566,7 +578,6 @@ public class Matrix {
     //
 
     public Matrix heParameterInitialize(int previousLayer) {
-        Random rand = new Random();
         for (int i = 0; i < this.cells.length; i++) {
             this.cells[i] = rand.nextGaussian() * Math.sqrt(2. / ((double) previousLayer));
         }
@@ -602,7 +613,7 @@ public class Matrix {
             case "softmax":
                 return this.softmax(activation, nthDerivative);
             default:
-                return null;
+                throw new Exception();
         }
 
     }
@@ -757,7 +768,7 @@ public class Matrix {
                 return this;
             case 1:
                 for (int i = 0; i < this.cells.length; i++) {
-                    double temp = 1. / (1. + Math.exp(2.*this.cells[i]));
+                    double temp = 1. / (1. + Math.exp(2. * this.cells[i]));
                     this.cells[i] = 4. * temp * (1. - temp);
                 }
                 return this;
@@ -782,8 +793,8 @@ public class Matrix {
 
     public Matrix softmax(String activation, int nthDerivative) throws Exception {
         double count = 0;
-        for(int i = 0; i < this.cells.length;i++){
-            count += Math.exp(count);
+        for (int i = 0; i < this.cells.length; i++) {
+            count += Math.exp(this.cells[i]);
         }
         switch (nthDerivative) {
             case 0:
@@ -811,5 +822,100 @@ public class Matrix {
 
     public Matrix softmaxClone(String activation, int nthDerivative) throws Exception {
         return Matrix.softmaxClone(this, activation, nthDerivative);
+    }
+
+    //
+
+    public Matrix cost(Matrix b, String cost, int nthDerivative) throws Exception {
+        switch (cost) {
+            case "logLoss":
+                return this.logLoss(b, nthDerivative);
+            case "meanSquaredError":
+                return this.meanSquaredError(b, nthDerivative);
+            default:
+                throw new Exception();
+        }
+
+    }
+
+    public Matrix cost(Matrix a, Matrix b, String cost, int nthDerivative) throws Exception {
+        return this.set("*", "*", a).cost(b, cost, nthDerivative);
+    }
+
+    public static Matrix costClone(Matrix a, Matrix b, String cost, int nthDerivative) throws Exception {
+        return Matrix.create(a.rows, a.columns).cost(a, b, cost, nthDerivative);
+    }
+
+    public Matrix costClone(Matrix b, String cost, int nthDerivative) throws Exception {
+        return Matrix.costClone(this, b, cost, nthDerivative);
+    }
+
+    //
+
+    public Matrix logLoss(Matrix b, int nthDerivative) throws Exception {
+        switch (nthDerivative) {
+            case 0:
+                for (int i = 0; i < this.cells.length; i++) {
+                    double shiftOutput = Math.max(Math.min(this.cells[i], 1 - Math.pow(10, -15)), Math.pow(10, -15));
+                    double shiftExpected = Math.max(Math.min(b.cells[i], 1 - Math.pow(10, -15)), Math.pow(10, -15));
+                    this.cells[i] = -shiftExpected * Math.log(shiftOutput)
+                            - (1. - shiftExpected) * Math.log(1. - shiftOutput);
+                }
+                return this;
+            case 1:
+                for (int i = 0; i < this.cells.length; i++) {
+                    double shiftOutput = Math.max(Math.min(this.cells[i], 1 - Math.pow(10, -15)), Math.pow(10, -15));
+                    double shiftExpected = Math.max(Math.min(b.cells[i], 1 - Math.pow(10, -15)), Math.pow(10, -15));
+                    this.cells[i] = -shiftExpected / shiftOutput + (1 - shiftExpected) / (1 - shiftOutput);
+                }
+                return this;
+            default:
+                throw new Exception();
+        }
+
+    }
+
+    public Matrix logLoss(Matrix a, Matrix b, int nthDerivative) throws Exception {
+        return this.set("*", "*", a).logLoss(b, nthDerivative);
+    }
+
+    public static Matrix logLossClone(Matrix a, Matrix b, int nthDerivative) throws Exception {
+        return Matrix.create(a.rows, a.columns).logLoss(a, b, nthDerivative);
+    }
+
+    public Matrix logLossClone(Matrix b, int nthDerivative) throws Exception {
+        return Matrix.logLossClone(this, b, nthDerivative);
+    }
+
+    //
+
+    public Matrix meanSquaredError(Matrix b, int nthDerivative) throws Exception {
+        switch (nthDerivative) {
+            case 0:
+                for (int i = 0; i < this.cells.length; i++) {
+                    this.cells[i] = Math.pow(this.cells[i] - b.cells[i], 2);
+                }
+                return this;
+            case 1:
+                for (int i = 0; i < this.cells.length; i++) {
+                    this.cells[i] = 2.0 * (this.cells[i] - b.cells[i]);
+                }
+                return this;
+            default:
+                throw new Exception();
+        }
+
+    }
+
+    public Matrix meanSquaredError(Matrix a, Matrix b, int nthDerivative) throws Exception {
+        return this.set("*", "*", a).meanSquaredError(b, nthDerivative);
+    }
+
+    public static Matrix meanSquaredErrorClone(Matrix a, Matrix b, int nthDerivative) throws Exception {
+        return Matrix.create(a.rows, a.columns).meanSquaredError(a, b, nthDerivative);
+    }
+
+    public Matrix meanSquaredErrorClone(Matrix b, int nthDerivative) throws Exception {
+        return Matrix.meanSquaredErrorClone(this, b, nthDerivative);
     }
 }

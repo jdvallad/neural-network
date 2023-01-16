@@ -7,8 +7,8 @@ public class Driver {
         DataIterator tester = new DataIterator(100, "../mnist/testing/data.ser");
         NeuralNetwork mnist = new NeuralNetwork("logLoss", "./serials/mnistDigitClassify.ser")
                 .add(28 * 28)
-                .add("leakyrelu", 32)
-                .add("leakyrelu", 32)
+                .add("leakyRelu", 32)
+                .add("leakyRelu", 32)
                 .add("softmax", 10);
 
         Map<String, Object> input = Map.of("width", 28, "height", 28, "scale", 10.);

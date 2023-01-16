@@ -34,7 +34,7 @@ class NeuralNetwork {
         return this;
     }
 
-    public NeuralNetwork add(String activation, int out) {
+    public NeuralNetwork add(String activation, int out) throws Exception {
         NodeLayer newTail = new NodeLayer(out);
         WeightLayer newWeight = new WeightLayer(tailNode, newTail, activation);
         tailNode.nextWeightLayer = newWeight;
@@ -70,7 +70,7 @@ class NeuralNetwork {
             for (Matrix[] pair : iter.nextBatch()) {
                 double[] input = pair[0].getCells();
                 double[] expected = pair[1].getCells();
-                double[] output = compute(input);
+                double[] output = compute(pair[0]).getCells();
                 inputViewer.draw(
                         ImageViewer.listToImage(Functions
                                 .scale(Functions.shape(input, inputWidth, inputHeight,
@@ -105,9 +105,9 @@ class NeuralNetwork {
         return;
     }
 
-    public double[] compute(double[] input) throws Exception {
+    public Matrix compute(Matrix input) throws Exception {
         NodeLayer temp = headNode;
-        Functions.set(temp.values, input);
+        temp.values.set("*", "*", input);
         while (temp != tailNode) {
             temp.nextWeightLayer.compute();
             temp = temp.nextWeightLayer.nextNodeLayer;
@@ -119,8 +119,8 @@ class NeuralNetwork {
         double totalErrorSum = 0;
         while (validator.hasNextBatch())
             for (Matrix[] pair : validator.nextBatch()) {
-                double[] input = pair[0].getCells();
-                double[] expected = pair[1].getCells();
+                Matrix input = pair[0];
+                Matrix expected = pair[1];
                 totalErrorSum += error(compute(input), expected);
             }
         System.out.println("Average Cost: " + (totalErrorSum / (validator.numBatches * validator.batchSize)));
@@ -128,19 +128,16 @@ class NeuralNetwork {
         return;
     }
 
-    public double error(double[] output, double[] expected) throws Exception {
-        double sum = 0.;
-        for (int i = 0; i < output.length; i++)
-            sum += Functions.cost(output[i], expected[i], cost, 0);
-        return sum / output.length;
+    public double error(Matrix output, Matrix expected) throws Exception {
+        return output.cost(expected, cost, 0).getSum() / output.getColumns();
     }
 
     public void train(DataIterator trainer, double learningRate) throws Exception {
         resetGradient();
         while (trainer.hasNextBatch()) {
             for (Matrix[] pair : trainer.nextBatch()) {
-                double[] input = pair[0].getCells();
-                double[] expected = pair[1].getCells();
+                Matrix input = pair[0];
+                Matrix expected = pair[1];
                 gradientIncrement(compute(input), expected);
             }
             updateParameters(trainer.batchSize, learningRate);
@@ -152,57 +149,48 @@ class NeuralNetwork {
     public void resetGradient() {
         NodeLayer temp = headNode;
         while (temp != tailNode) {
-            Functions.set(temp.nextWeightLayer.biasAverages, 0);
-            Functions.set(temp.nextWeightLayer.weightAverages, 0);
+            temp.nextWeightLayer.biasAverages.zero();
+            temp.nextWeightLayer.weightAverages.zero();
             temp = temp.nextWeightLayer.nextNodeLayer;
         }
     }
 
-    public void gradientIncrement(double[] output, double[] expected) throws Exception {
+    public void gradientIncrement(Matrix output, Matrix expected) throws Exception {
         NodeLayer temp = tailNode;
-        for (int i = 0; i < temp.previousWeightLayer.errors.length; i++) {
-            if (temp.previousWeightLayer.activation.equals("softmax") && cost.equals("logLoss")) {
-                temp.previousWeightLayer.errors[i] = output[i] - expected[i];
-            } else {
-                temp.previousWeightLayer.errors[i] = Functions.cost(output[i], expected[i], cost, 1)
-                        * Functions.activate(temp.previousWeightLayer.weightedSum(i),
-                                temp.previousWeightLayer.activation, 1);
-            }
+        if (temp.previousWeightLayer.activation.equals("softmax") && cost.equals("logLoss")) {
+            expected.product(-1);
+            temp.previousWeightLayer.errors.add(output, expected);
+            expected.product(-1);
+        } else {
+            temp.previousWeightLayer.errors.activate(temp.previousWeightLayer.weightedSum(),
+                    temp.previousWeightLayer.activation, 1);
+            temp.previousWeightLayer.errors.elementProduct(Matrix.costClone(output, expected, cost, 1));
         }
         temp = temp.previousWeightLayer.previousNodeLayer;
         while (temp != headNode) {
-            for (int i = 0; i < temp.previousWeightLayer.errors.length; i++) {
-                double sum = 0.;
-                for (int r = 0; r < temp.nextWeightLayer.biases.length; r++) {
-                    sum += temp.nextWeightLayer.errors[r]
-                            * temp.nextWeightLayer.weights[i][r];
-                }
-                sum *= Functions.activate(temp.previousWeightLayer.weightedSum(i), temp.previousWeightLayer.activation,
-                        1);
-                temp.previousWeightLayer.errors[i] = sum;
-            }
+            temp.previousWeightLayer.errors.transpose()
+                    .innerProduct(temp.nextWeightLayer.weights, temp.nextWeightLayer.errors).transpose();
+            temp.previousWeightLayer.errors.elementProduct(temp.previousWeightLayer.weightedSum()
+                    .activate(temp.previousWeightLayer.activation, 1));
             temp = temp.previousWeightLayer.previousNodeLayer;
         }
         temp = tailNode;
         while (temp != headNode) {
-            Functions.increase(temp.previousWeightLayer.biasAverages, temp.previousWeightLayer.errors);
-            Functions.increase(temp.previousWeightLayer.weightAverages,
-                    Functions.multiplyMatrices(
-                            Functions.transposeMatrix(
-                                    new double[][] { temp.previousWeightLayer.previousNodeLayer.values }),
-                            new double[][] { temp.previousWeightLayer.errors }));
+            temp.previousWeightLayer.biasAverages.add(temp.previousWeightLayer.errors);
+            temp.previousWeightLayer.weightAverages
+                    .add(Matrix.outerProductClone(temp.previousWeightLayer.previousNodeLayer.values,
+                            temp.previousWeightLayer.errors));
             temp = temp.previousWeightLayer.previousNodeLayer;
         }
     }
 
-    public void updateParameters(int batchSize, double learningRate) {
+    public void updateParameters(int batchSize, double learningRate) throws Exception {
         NodeLayer temp = headNode;
         while (temp != tailNode) {
             if (!temp.nextWeightLayer.locked) {
-                Functions.increase(temp.nextWeightLayer.biases,
-                        Functions.product(temp.nextWeightLayer.biasAverages, -learningRate / batchSize));
-                Functions.increase(temp.nextWeightLayer.weights,
-                        Functions.product(temp.nextWeightLayer.weightAverages, -learningRate / batchSize));
+                double scalar = -learningRate / batchSize;
+                temp.nextWeightLayer.biases.add(temp.nextWeightLayer.biasAverages.product(scalar));
+                temp.nextWeightLayer.weights.add(temp.nextWeightLayer.weightAverages.product(scalar));
             }
             temp = temp.nextWeightLayer.nextNodeLayer;
         }
@@ -231,11 +219,11 @@ class NeuralNetwork {
         count = correct = 0;
         while (iter.hasNextBatch()) {
             for (Matrix[] pair : iter.nextBatch()) {
-                double[] input = pair[0].getCells();
-                double[] expected = pair[1].getCells();
-                double[] output = compute(input);
+                Matrix input = pair[0];
+                Matrix expected = pair[1];
+                Matrix output = compute(input);
                 count++;
-                if (Functions.collapse(output) == Functions.collapse(expected))
+                if (output.maxIndex() == expected.maxIndex())
                     correct++;
             }
         }

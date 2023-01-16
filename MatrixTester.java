@@ -1,4 +1,3 @@
-import java.text.DecimalFormat;
 
 public class MatrixTester {
     public static void main(String[] args) throws Exception {

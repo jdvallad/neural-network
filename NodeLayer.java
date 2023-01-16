@@ -7,7 +7,7 @@ public class NodeLayer {
         this.nextWeightLayer = null;
         this.previousWeightLayer = null;
         this.numNodes = nodes;
-        this.values = Matrix.create(nodes, 1).zero();
+        this.values = Matrix.create(1,nodes).zero();
 
     }
 
