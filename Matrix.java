@@ -563,4 +563,253 @@ public class Matrix {
         return Matrix.innerProductClone(this, b);
     }
 
+    //
+
+    public Matrix heParameterInitialize(int previousLayer) {
+        Random rand = new Random();
+        for (int i = 0; i < this.cells.length; i++) {
+            this.cells[i] = rand.nextGaussian() * Math.sqrt(2. / ((double) previousLayer));
+        }
+        return this;
+    }
+
+    public Matrix heParameterInitialize(Matrix a, int previousLayer) throws Exception {
+        return this.set("*", "*", a).heParameterInitialize(previousLayer);
+    }
+
+    public static Matrix heParameterInitializeClone(Matrix a, int previousLayer) throws Exception {
+        return Matrix.create(a.rows, a.columns).heParameterInitialize(a, previousLayer);
+    }
+
+    public Matrix heParameterInitializeClone(int previousLayer) throws Exception {
+        return Matrix.heParameterInitializeClone(this, previousLayer);
+    }
+
+    //
+
+    public Matrix activate(String activation, int nthDerivative) throws Exception {
+        switch (activation) {
+            case "sigmoid":
+                return this.sigmoid(activation, nthDerivative);
+            case "swish":
+                return this.swish(activation, nthDerivative);
+            case "leakyRelu":
+                return this.leakyRelu(activation, nthDerivative);
+            case "relu":
+                return this.relu(activation, nthDerivative);
+            case "tanh":
+                return this.tanh(activation, nthDerivative);
+            case "softmax":
+                return this.softmax(activation, nthDerivative);
+            default:
+                return null;
+        }
+
+    }
+
+    public Matrix activate(Matrix a, String activation, int nthDerivative) throws Exception {
+        return this.set("*", "*", a).activate(activation, nthDerivative);
+    }
+
+    public static Matrix activateClone(Matrix a, String activation, int nthDerivative) throws Exception {
+        return Matrix.create(a.rows, a.columns).activate(a, activation, nthDerivative);
+    }
+
+    public Matrix activateClone(String activation, int nthDerivative) throws Exception {
+        return Matrix.activateClone(this, activation, nthDerivative);
+    }
+
+    //
+
+    public Matrix sigmoid(String activation, int nthDerivative) throws Exception {
+        switch (nthDerivative) {
+            case 0:
+                for (int i = 0; i < this.cells.length; i++) {
+                    this.cells[i] = 1. / (1. + Math.exp(-this.cells[i]));
+                }
+                return this;
+            case 1:
+                for (int i = 0; i < this.cells.length; i++) {
+                    double temp = 1. / (1. + Math.exp(-this.cells[i]));
+                    this.cells[i] = temp * (1. - temp);
+                }
+                return this;
+            default:
+                throw new Exception();
+        }
+    }
+
+    public Matrix sigmoid(Matrix a, String activation, int nthDerivative) throws Exception {
+        return this.set("*", "*", a).sigmoid(activation, nthDerivative);
+    }
+
+    public static Matrix sigmoidClone(Matrix a, String activation, int nthDerivative) throws Exception {
+        return Matrix.create(a.rows, a.columns).sigmoid(a, activation, nthDerivative);
+    }
+
+    public Matrix sigmoidClone(String activation, int nthDerivative) throws Exception {
+        return Matrix.sigmoidClone(this, activation, nthDerivative);
+    }
+
+    //
+
+    public Matrix swish(String activation, int nthDerivative) throws Exception {
+        switch (nthDerivative) {
+            case 0:
+                for (int i = 0; i < this.cells.length; i++) {
+                    double temp = 1. / (1. + Math.exp(-this.cells[i]));
+                    this.cells[i] = this.cells[i] * temp;
+                }
+                return this;
+            case 1:
+                for (int i = 0; i < this.cells.length; i++) {
+                    double temp = 1. / (1. + Math.exp(-this.cells[i]));
+                    this.cells[i] = (this.cells[i] * temp) + ((temp) * (1. - (this.cells[i] * temp)));
+                }
+                return this;
+            default:
+                throw new Exception();
+        }
+    }
+
+    public Matrix swish(Matrix a, String activation, int nthDerivative) throws Exception {
+        return this.set("*", "*", a).swish(activation, nthDerivative);
+    }
+
+    public static Matrix swishClone(Matrix a, String activation, int nthDerivative) throws Exception {
+        return Matrix.create(a.rows, a.columns).swish(a, activation, nthDerivative);
+    }
+
+    public Matrix swishClone(String activation, int nthDerivative) throws Exception {
+        return Matrix.swishClone(this, activation, nthDerivative);
+    }
+
+    //
+
+    public Matrix leakyRelu(String activation, int nthDerivative) throws Exception {
+        switch (nthDerivative) {
+            case 0:
+                for (int i = 0; i < this.cells.length; i++) {
+                    this.cells[i] = this.cells[i] >= 0 ? this.cells[i] : 0.01 * this.cells[i];
+                }
+                return this;
+            case 1:
+                for (int i = 0; i < this.cells.length; i++) {
+                    this.cells[i] = this.cells[i] >= 0 ? 1 : 0.01;
+                }
+                return this;
+            default:
+                throw new Exception();
+        }
+    }
+
+    public Matrix leakyRelu(Matrix a, String activation, int nthDerivative) throws Exception {
+        return this.set("*", "*", a).leakyRelu(activation, nthDerivative);
+    }
+
+    public static Matrix leakyReluClone(Matrix a, String activation, int nthDerivative) throws Exception {
+        return Matrix.create(a.rows, a.columns).leakyRelu(a, activation, nthDerivative);
+    }
+
+    public Matrix leakyReluClone(String activation, int nthDerivative) throws Exception {
+        return Matrix.leakyReluClone(this, activation, nthDerivative);
+    }
+
+    //
+
+    public Matrix relu(String activation, int nthDerivative) throws Exception {
+        switch (nthDerivative) {
+            case 0:
+                for (int i = 0; i < this.cells.length; i++) {
+                    this.cells[i] = Math.max(0., this.cells[i]);
+                }
+                return this;
+            case 1:
+                for (int i = 0; i < this.cells.length; i++) {
+                    this.cells[i] = this.cells[i] >= 0 ? 1 : 0.;
+                }
+                return this;
+            default:
+                throw new Exception();
+        }
+    }
+
+    public Matrix relu(Matrix a, String activation, int nthDerivative) throws Exception {
+        return this.set("*", "*", a).relu(activation, nthDerivative);
+    }
+
+    public static Matrix reluClone(Matrix a, String activation, int nthDerivative) throws Exception {
+        return Matrix.create(a.rows, a.columns).relu(a, activation, nthDerivative);
+    }
+
+    public Matrix reluClone(String activation, int nthDerivative) throws Exception {
+        return Matrix.reluClone(this, activation, nthDerivative);
+    }
+
+    //
+
+    public Matrix tanh(String activation, int nthDerivative) throws Exception {
+        switch (nthDerivative) {
+            case 0:
+                for (int i = 0; i < this.cells.length; i++) {
+                    this.cells[i] = 1. - (2. / (1. + Math.exp(2. * this.cells[i])));
+                }
+                return this;
+            case 1:
+                for (int i = 0; i < this.cells.length; i++) {
+                    double temp = 1. / (1. + Math.exp(2.*this.cells[i]));
+                    this.cells[i] = 4. * temp * (1. - temp);
+                }
+                return this;
+            default:
+                throw new Exception();
+        }
+    }
+
+    public Matrix tanh(Matrix a, String activation, int nthDerivative) throws Exception {
+        return this.set("*", "*", a).tanh(activation, nthDerivative);
+    }
+
+    public static Matrix tanhClone(Matrix a, String activation, int nthDerivative) throws Exception {
+        return Matrix.create(a.rows, a.columns).tanh(a, activation, nthDerivative);
+    }
+
+    public Matrix tanhClone(String activation, int nthDerivative) throws Exception {
+        return Matrix.tanhClone(this, activation, nthDerivative);
+    }
+
+    //
+
+    public Matrix softmax(String activation, int nthDerivative) throws Exception {
+        double count = 0;
+        for(int i = 0; i < this.cells.length;i++){
+            count += Math.exp(count);
+        }
+        switch (nthDerivative) {
+            case 0:
+                for (int i = 0; i < this.cells.length; i++) {
+                    this.cells[i] = Math.exp(this.cells[i]) / count;
+                }
+                return this;
+            case 1:
+                for (int i = 0; i < this.cells.length; i++) {
+                    this.cells[i] = 0;
+                }
+                return this;
+            default:
+                throw new Exception();
+        }
+    }
+
+    public Matrix softmax(Matrix a, String activation, int nthDerivative) throws Exception {
+        return this.set("*", "*", a).softmax(activation, nthDerivative);
+    }
+
+    public static Matrix softmaxClone(Matrix a, String activation, int nthDerivative) throws Exception {
+        return Matrix.create(a.rows, a.columns).softmax(a, activation, nthDerivative);
+    }
+
+    public Matrix softmaxClone(String activation, int nthDerivative) throws Exception {
+        return Matrix.softmaxClone(this, activation, nthDerivative);
+    }
 }

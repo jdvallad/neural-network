@@ -68,8 +68,8 @@ class NeuralNetwork {
         int counter = 0;
         while (iter.hasNextBatch()) {
             for (Matrix[] pair : iter.nextBatch()) {
-                double[] input = pair[0];
-                double[] expected = pair[1];
+                double[] input = pair[0].getCells();
+                double[] expected = pair[1].getCells();
                 double[] output = compute(input);
                 inputViewer.draw(
                         ImageViewer.listToImage(Functions
@@ -118,9 +118,9 @@ class NeuralNetwork {
     public void validate(DataIterator validator) throws Exception {
         double totalErrorSum = 0;
         while (validator.hasNextBatch())
-            for (double[][] pair : validator.nextBatch()) {
-                double[] input = pair[0];
-                double[] expected = pair[1];
+            for (Matrix[] pair : validator.nextBatch()) {
+                double[] input = pair[0].getCells();
+                double[] expected = pair[1].getCells();
                 totalErrorSum += error(compute(input), expected);
             }
         System.out.println("Average Cost: " + (totalErrorSum / (validator.numBatches * validator.batchSize)));
@@ -138,9 +138,9 @@ class NeuralNetwork {
     public void train(DataIterator trainer, double learningRate) throws Exception {
         resetGradient();
         while (trainer.hasNextBatch()) {
-            for (double[][] pair : trainer.nextBatch()) {
-                double[] input = pair[0];
-                double[] expected = pair[1];
+            for (Matrix[] pair : trainer.nextBatch()) {
+                double[] input = pair[0].getCells();
+                double[] expected = pair[1].getCells();
                 gradientIncrement(compute(input), expected);
             }
             updateParameters(trainer.batchSize, learningRate);
@@ -230,9 +230,9 @@ class NeuralNetwork {
         double count, correct;
         count = correct = 0;
         while (iter.hasNextBatch()) {
-            for (double[][] pair : iter.nextBatch()) {
-                double[] input = pair[0];
-                double[] expected = pair[1];
+            for (Matrix[] pair : iter.nextBatch()) {
+                double[] input = pair[0].getCells();
+                double[] expected = pair[1].getCells();
                 double[] output = compute(input);
                 count++;
                 if (Functions.collapse(output) == Functions.collapse(expected))

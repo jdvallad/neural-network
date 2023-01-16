@@ -55,7 +55,7 @@ public class ImageViewer {
         return newImage;
     }
 
-    static int[][][] imageToList(BufferedImage img) {
+    private static int[][][] imageToList(BufferedImage img) {
         boolean isColor = isColor(img);
         BufferedImage image = standardize(img);
         final int width = image.getWidth();
@@ -88,7 +88,7 @@ public class ImageViewer {
         return result;
     }
 
-    static BufferedImage listToImage(int[][][] dubs) {
+    private static BufferedImage listToImage(int[][][] dubs) {
         boolean isColor = dubs[0][0].length == 3;
         BufferedImage out;
         if (isColor) {
