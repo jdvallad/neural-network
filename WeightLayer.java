@@ -14,15 +14,16 @@ public class WeightLayer {
         this.outputNodes = nextNodeLayer.numNodes;
         this.locked = false;
         this.activation = activation;
-        this.biases = Matrix.create(1, this.outputNodes).heParameterInitialize(this.previousNodeLayer.numNodes);
-        this.weights = Matrix.create(this.inputNodes, this.outputNodes)
-                .heParameterInitialize(this.previousNodeLayer.numNodes);
+        this.biases = Matrix.create(1, this.outputNodes);
+        this.biases.heParameterInitialize(this.previousNodeLayer.numNodes);
+        this.weights = Matrix.create(this.inputNodes, this.outputNodes);
+        this.weights.heParameterInitialize(this.previousNodeLayer.numNodes);
         this.weightAverages = Matrix.create(this.inputNodes, this.outputNodes).zero();
         this.biasAverages = Matrix.create(1, this.outputNodes).zero();
         this.errors = Matrix.create(1, this.outputNodes).zero();
     }
 
-    public void compute() throws Exception {
+    public void feedForward() throws Exception {
         nextNodeLayer.values.product(previousNodeLayer.values, this.weights).add(this.biases).activate(this.activation,
                 0);
     }

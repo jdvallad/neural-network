@@ -7,8 +7,15 @@ public class NodeLayer {
         this.nextWeightLayer = null;
         this.previousWeightLayer = null;
         this.numNodes = nodes;
-        this.values = Matrix.create(1,nodes).zero();
+        this.values = Matrix.create(1, nodes).zero();
 
     }
 
+    public void feedForward() throws Exception {
+        this.nextWeightLayer.feedForward();
+    }
+
+    public void feed(Matrix input) throws Exception {
+        this.values.set("*", "*", input);
+    }
 }

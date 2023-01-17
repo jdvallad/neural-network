@@ -32,13 +32,13 @@ public class DataIterator {
         this.numBatches = data.length / batchSize;
     }
 
-    public Matrix[][] nextBatch() throws Exception {
-        Matrix[][] res = new Matrix[batchSize][];
+    public DataPair[] nextBatch() throws Exception {
+        DataPair[] res = new DataPair[batchSize];
         for (int i = 0; i < batchSize; i++) {
             if (reversed) {
-                res[i] = new Matrix[] { labels[index], data[index] };
+                res[i] = new DataPair(labels[index], data[index]);
             } else {
-                res[i] = new Matrix[] { data[index], labels[index] };
+                res[i] = new DataPair(data[index], labels[index]);
             }
             index++;
         }

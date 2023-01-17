@@ -99,6 +99,10 @@ public class Matrix {
         System.out.print("" + this.get(this.rows - 1, this.columns - 1) + "])\r\n\r\n");
     }
 
+    public void printDimensions() throws Exception {
+        System.out.println("\r\nThis is an " + this.rows + "x" + this.columns + " Matrix.");
+    }
+
     // Getter methods, used to access data about the Matrix without modifying it.
     public double get(int row, int col) throws Exception {
         if (row < 0 || row >= this.rows || col < 0 || col >= this.columns) {
