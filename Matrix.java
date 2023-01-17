@@ -278,7 +278,7 @@ public class Matrix {
         }
         if (wildcard.equals("*")) {
             for (int i = 0; i < this.rows; i++) {
-                this.set(i, col, b.get(i, 1));
+                this.set(i, col, b.get(i, 0));
             }
             return this;
         }
@@ -341,11 +341,19 @@ public class Matrix {
     }
 
     //
-
-    public Matrix transpose() {
+    public Matrix transpose() throws Exception {
+        Matrix output = this.clone();
+        output.rows = this.columns;
+        output.columns = this.rows;
+        for (int r = 0; r < this.rows; r++) {
+            for (int c = 0; c < this.columns; c++) {
+                output.set(c, r, this.get(r, c));
+            }
+        }
         int temp = this.rows;
         this.rows = this.columns;
         this.columns = temp;
+        this.set("*", "*", output);
         return this;
     }
 
@@ -455,7 +463,8 @@ public class Matrix {
     //
 
     public Matrix shape(int rows, int cols) throws Exception {
-        if (rows < 1 || columns < 1 || rows * columns != cells.length) {
+        if (rows < 1 || cols < 1 || (rows * cols) != cells.length) {
+
             throw new Exception();
         }
         this.rows = rows;

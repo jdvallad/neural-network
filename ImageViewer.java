@@ -6,6 +6,7 @@ import java.awt.image.DataBufferByte;
 import java.awt.image.DataBufferInt;
 import java.io.File;
 import java.io.IOException;
+
 public class ImageViewer {
     private final JFrame frame;
     private JLabel label;
@@ -31,6 +32,10 @@ public class ImageViewer {
         draw(image, (int) (image.getWidth() * scale), (int) (image.getHeight() * scale));
     }
 
+    public void draw(BufferedImage image) {
+        this.draw(image, 1.);
+    }
+
     public void show() {
         frame.setVisible(true);
         frame.repaint();
@@ -41,108 +46,122 @@ public class ImageViewer {
         frame.repaint();
     }
 
-    static BufferedImage standardize(BufferedImage image) {
-        boolean isColor = isColor(image);
-        BufferedImage newImage;
-        if (isColor) {
-            newImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);
-        } else {
-            newImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
+    static Matrix getRedMatrix(BufferedImage image) throws Exception {
+        Matrix output = Matrix.create(image.getHeight(), image.getWidth());
+        for (int i = 0; i < image.getWidth(); i++) {
+            for (int j = 0; j < image.getHeight(); j++) {
+                Color color = new Color(image.getRGB(i, j));
+                output.set(j, i, color.getRed());
+            }
         }
-        Graphics2D g = newImage.createGraphics();
-        g.drawImage(image, 0, 0, image.getWidth(), image.getHeight(), null);
-        g.dispose();
-        return newImage;
+        return output;
     }
 
-    private static int[][][] imageToList(BufferedImage img) {
-        boolean isColor = isColor(img);
-        BufferedImage image = standardize(img);
-        final int width = image.getWidth();
-        final int height = image.getHeight();
-        int[][][] result = new int[width][height][isColor ? 3 : 1];
-        if (isColor) {
-            final int[] pixels = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
-            for (int i = 0, row = 0, col = 0; i < pixels.length; i++) {
-                int red = (pixels[i] >> 16) & 0xff;
-                int green = (pixels[i] >> 8) & 0xff;
-                int blue = pixels[i] & 0xff;
-                result[row][col] = new int[] { red, green, blue };
-                col++;
-                if (col == height) {
-                    row++;
-                    col = 0;
-                }
-            }
-        } else {
-            final byte[] pixels = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
-            for (int i = 0, row = 0, col = 0; i < pixels.length; i++) {
-                result[row][col][0] = pixels[i] & 0xff;
-                col++;
-                if (col == height) {
-                    row++;
-                    col = 0;
-                }
+    static Matrix getRedMatrix(Matrix combinedMatrix) throws Exception {
+        Matrix output = Matrix.create(combinedMatrix.getRows(), combinedMatrix.getColumns() / 3);
+        for (int i = 0; i < output.getRows(); i++) {
+            for (int j = 0; j < output.getColumns(); j++) {
+                output.set(i, j, combinedMatrix.get(i, j));
             }
         }
-        return result;
+        return output;
     }
 
-    private static BufferedImage listToImage(int[][][] dubs) {
-        boolean isColor = dubs[0][0].length == 3;
-        BufferedImage out;
-        if (isColor) {
-            out = new BufferedImage(dubs.length, dubs[0].length, BufferedImage.TYPE_INT_RGB);
-        } else {
-            out = new BufferedImage(dubs.length, dubs[0].length, BufferedImage.TYPE_BYTE_GRAY);
-        }
-        int[] outPixels = ((DataBufferInt) out.getRaster().getDataBuffer()).getData();
-        int red, green, blue;
-        for (int r = 0; r < dubs.length; r++) {
-            for (int c = 0; c < dubs[0].length; c++) {
-                if (isColor) {
-                    red = dubs[r][c][0] << 16;
-                    green = dubs[r][c][1] << 8;
-                    blue = dubs[r][c][2];
-                } else {
-                    red = dubs[r][c][0] << 16;
-                    green = dubs[r][c][0] << 8;
-                    blue = dubs[r][c][0];
-                }
-                outPixels[r * dubs[0].length + c] = red | green | blue;
+    static Matrix getGreenMatrix(BufferedImage image) throws Exception {
+        Matrix output = Matrix.create(image.getHeight(), image.getWidth());
+        for (int i = 0; i < image.getWidth(); i++) {
+            for (int j = 0; j < image.getHeight(); j++) {
+                Color color = new Color(image.getRGB(i, j));
+                output.set(j, i, color.getGreen());
             }
         }
-        return out;
+        return output;
     }
 
-    static BufferedImage listToImage(double[][][] dubs) {
-        boolean isColor = dubs[0][0].length == 3;
-        BufferedImage out;
-        if (isColor) {
-            out = new BufferedImage(dubs.length, dubs[0].length, BufferedImage.TYPE_INT_RGB);
-        } else {
-            out = new BufferedImage(dubs.length, dubs[0].length, BufferedImage.TYPE_BYTE_GRAY);
-        }
-        int red, green, blue;
-        if (isColor) {
-            int[] outPixels = ((DataBufferInt) out.getRaster().getDataBuffer()).getData();
-            for (int r = 0; r < dubs.length; r++) {
-                for (int c = 0; c < dubs[0].length; c++) {
-                    red = ((int) dubs[r][c][0]) << 16;
-                    green = ((int) dubs[r][c][1]) << 8;
-                    blue = ((int) dubs[r][c][2]);
-                    outPixels[r * dubs[0].length + c] = red | green | blue;
-                }
-            }
-        } else {
-            byte[] outPixels = ((DataBufferByte) out.getRaster().getDataBuffer()).getData();
-            for (int r = 0; r < dubs.length; r++) {
-                for (int c = 0; c < dubs[0].length; c++) {
-                    outPixels[r * dubs[0].length + c] = (byte) dubs[r][c][0];
-                }
+    static Matrix getGreenMatrix(Matrix combinedMatrix) throws Exception {
+        Matrix output = Matrix.create(combinedMatrix.getRows(), combinedMatrix.getColumns() / 3);
+        for (int i = 0; i < output.getRows(); i++) {
+            for (int j = 0; j < output.getColumns(); j++) {
+                output.set(i, j, combinedMatrix.get(i, output.getColumns() + j));
             }
         }
-        return out;
+        return output;
+    }
+
+    static Matrix getBlueMatrix(BufferedImage image) throws Exception {
+        Matrix output = Matrix.create(image.getHeight(), image.getWidth());
+        for (int i = 0; i < image.getWidth(); i++) {
+            for (int j = 0; j < image.getHeight(); j++) {
+                Color color = new Color(image.getRGB(i, j));
+                output.set(j, i, color.getBlue());
+            }
+        }
+        return output;
+    }
+
+    static Matrix getBlueMatrix(Matrix combinedMatrix) throws Exception {
+        Matrix output = Matrix.create(combinedMatrix.getRows(), combinedMatrix.getColumns() / 3);
+        for (int i = 0; i < output.getRows(); i++) {
+            for (int j = 0; j < output.getColumns(); j++) {
+                output.set(i, j, combinedMatrix.get(i, (2 * output.getColumns()) + j));
+            }
+        }
+        return output;
+    }
+
+    static Matrix getCombinedMatrix(BufferedImage image) throws Exception {
+        Matrix red = getRedMatrix(image);
+        Matrix blue = getBlueMatrix(image);
+        Matrix green = getGreenMatrix(image);
+        return combineMatrices(red, green, blue);
+    }
+
+    static BufferedImage matrixToImage(Matrix input) throws Exception {
+        return matrixToImage(input, input, input);
+    }
+
+    static BufferedImage matrixToImage(Matrix redMatrix, Matrix greenMatrix, Matrix blueMatrix) throws Exception {
+        BufferedImage output = new BufferedImage(redMatrix.getColumns(), redMatrix.getRows(),
+                BufferedImage.TYPE_INT_RGB);
+        for (int r = 0; r < redMatrix.getRows(); r++) {
+            for (int c = 0; c < redMatrix.getColumns(); c++) {
+                int red, green, blue;
+                red = (int) redMatrix.get(r, c);
+                green = (int) greenMatrix.get(r, c);
+                blue = (int) blueMatrix.get(r, c);
+                Color color = new Color(red, green, blue);
+                output.setRGB(c, r, color.getRGB());
+            }
+        }
+        return output;
+    }
+
+    static BufferedImage combinedMatrixToImage(Matrix combinedMatrix) throws Exception {
+        Matrix red = getRedMatrix(combinedMatrix);
+        Matrix blue = getBlueMatrix(combinedMatrix);
+        Matrix green = getGreenMatrix(combinedMatrix);
+        return matrixToImage(red, green, blue);
+    }
+
+    static Matrix combineMatrices(Matrix redMatrix, Matrix greenMatrix, Matrix blueMatrix) throws Exception {
+        Matrix output = Matrix.create(redMatrix.getRows(), 3 * redMatrix.getColumns());
+        for (int r = 0; r < redMatrix.getRows(); r++) {
+            for (int c = 0; c < redMatrix.getColumns(); c++) {
+                output.set(r, c, redMatrix.get(r, c));
+                output.set(r, redMatrix.getColumns() + c, greenMatrix.get(r, c));
+                output.set(r, (2 * redMatrix.getColumns()) + c, blueMatrix.get(r, c));
+            }
+        }
+        return output;
+    }
+
+    static Matrix greyMatrix(Matrix combinedMatrix) throws Exception {
+        Matrix red = getRedMatrix(combinedMatrix);
+        Matrix blue = getBlueMatrix(combinedMatrix);
+        Matrix green = getGreenMatrix(combinedMatrix);
+        red.add(blue).add(green);
+        red.product(1. / 3.);
+        return red;
     }
 
     static BufferedImage pathToImage(String filePath) throws IOException {
@@ -153,23 +172,4 @@ public class ImageViewer {
         ImageIO.write(image, "jpg", new File(filePath));
     }
 
-    static boolean isColor(BufferedImage image) {
-        // Test the type
-        if (image.getType() == BufferedImage.TYPE_BYTE_GRAY)
-            return false;
-        if (image.getType() == BufferedImage.TYPE_USHORT_GRAY)
-            return false;
-        // Test the number of channels / bands
-        if (image.getRaster().getNumBands() == 1)
-            return false; // Single channel => gray scale
-
-        // Multi-channels image; then you have to test the color for each pixel.
-        for (int y = 0; y < image.getHeight(); y++)
-            for (int x = 0; x < image.getWidth(); x++)
-                for (int c = 1; c < image.getRaster().getNumBands(); c++)
-                    if (image.getRaster().getSample(x, y, c - 1) != image.getRaster().getSample(x, y, c))
-                        return true;
-
-        return false;
-    }
 }
