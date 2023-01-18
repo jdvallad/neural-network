@@ -36,6 +36,19 @@ public class ImageViewer {
         this.draw(image, 1.);
     }
 
+    public void draw(Matrix m, int width, int height) throws Exception {
+        draw(ImageViewer.matrixToImage(m), width, height);
+        return;
+    }
+
+    public void draw(Matrix m, double scale) throws Exception {
+        draw(ImageViewer.matrixToImage(m), scale);
+    }
+
+    public void draw(Matrix m) throws Exception {
+        this.draw(ImageViewer.matrixToImage(m));
+    }
+
     public void show() {
         frame.setVisible(true);
         frame.repaint();
@@ -127,8 +140,11 @@ public class ImageViewer {
             for (int c = 0; c < redMatrix.getColumns(); c++) {
                 int red, green, blue;
                 red = (int) redMatrix.get(r, c);
+                red = red > 255 ? 255 : (red < 0 ? 0 : red);
                 green = (int) greenMatrix.get(r, c);
+                green = green > 255 ? 255 : (green < 0 ? 0 : green);
                 blue = (int) blueMatrix.get(r, c);
+                blue = blue > 255 ? 255 : (blue < 0 ? 0 : blue );
                 Color color = new Color(red, green, blue);
                 output.setRGB(c, r, color.getRGB());
             }
@@ -162,6 +178,10 @@ public class ImageViewer {
         red.add(blue).add(green);
         red.product(1. / 3.);
         return red;
+    }
+
+    static Matrix greyMatrix(BufferedImage image) throws Exception {
+        return greyMatrix(getCombinedMatrix(image));
     }
 
     static BufferedImage pathToImage(String filePath) throws IOException {

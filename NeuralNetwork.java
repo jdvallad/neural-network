@@ -29,9 +29,9 @@ class NeuralNetwork {
         return this;
     }
 
-    public NeuralNetwork add(String activation, int out) throws Exception {
+    public NeuralNetwork add(double keepProbability, String activation, int out) throws Exception {
         NodeLayer newTail = new NodeLayer(out);
-        WeightLayer newWeight = new WeightLayer(tailNode, newTail, activation);
+        WeightLayer newWeight = new WeightLayer(tailNode, newTail, activation, keepProbability);
         tailNode.nextWeightLayer = newWeight;
         newTail.previousWeightLayer = newWeight;
         tailNode = newTail;
@@ -98,6 +98,18 @@ class NeuralNetwork {
         return temp.values.clone();
     }
 
+    public Matrix computeWithDropout(Matrix input) throws Exception {
+        NodeLayer temp = headNode;
+        temp.feed(input);
+        while (temp != tailNode) {
+            temp.nextWeightLayer.dropout();
+            temp.nextWeightLayer.dropoutUpscale();
+            temp.feedForward();
+            temp = temp.nextWeightLayer.nextNodeLayer;
+        }
+        return temp.values.clone();
+    }
+
     public void validate(DataIterator validator) throws Exception {
         double totalErrorSum = 0;
         while (validator.hasNextBatch())
@@ -117,7 +129,7 @@ class NeuralNetwork {
         while (trainer.hasNextBatch()) {
             resetAverages();
             for (DataPair pair : trainer.nextBatch()) {
-                Matrix output = compute(pair.input);
+                Matrix output = computeWithDropout(pair.input);
                 updateErrors(output, pair.expected);
                 updateAverages(output, pair.expected);
             }
@@ -126,7 +138,6 @@ class NeuralNetwork {
         trainer.reset();
         return;
     }
-
     public void resetAverages() {
         NodeLayer temp = headNode;
         while (temp != tailNode) {

@@ -468,7 +468,7 @@ public class Matrix {
 
     public Matrix shape(int rows, int cols) throws Exception {
         if (rows < 1 || cols < 1 || (rows * cols) != cells.length) {
-
+            System.out.println(cells.length);
             throw new Exception();
         }
         this.rows = rows;

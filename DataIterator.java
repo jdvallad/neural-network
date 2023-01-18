@@ -9,27 +9,46 @@ public class DataIterator {
     private final Matrix[] data, labels;
     private boolean reversed;
 
-    public DataIterator(int batchSize, String filePath) throws Exception {
+    public DataIterator(int batchSize, String dataPath, String labelsPath) throws Exception {
         this.batchSize = batchSize;
         reversed = false;
         batchCounter = 0;
         hasNextBatch = true;
         index = 0;
-        double[][][] temp;
-        FileInputStream fileIn = new FileInputStream(filePath);
+        double[][] temp;
+        FileInputStream fileIn = new FileInputStream(dataPath);
         ObjectInputStream in = new ObjectInputStream(fileIn);
-        temp = (double[][][]) in.readObject();
+        temp = (double[][]) in.readObject();
         in.close();
         fileIn.close();
-        data = new Matrix[temp[0].length];
+        data = new Matrix[temp.length];
         for (int i = 0; i < data.length; i++) {
-            data[i] = Matrix.create(temp[0][i]);
+            data[i] = Matrix.create(temp[i]);
         }
-        labels = new Matrix[temp[1].length];
+        fileIn = new FileInputStream(labelsPath);
+        in = new ObjectInputStream(fileIn);
+        temp = (double[][]) in.readObject();
+        in.close();
+        fileIn.close();
+        labels = new Matrix[temp.length];
         for (int i = 0; i < labels.length; i++) {
-            labels[i] = Matrix.create(temp[1][i]);
+            labels[i] = Matrix.create(temp[i]);
         }
         this.numBatches = data.length / batchSize;
+    }
+
+    public void normalize(double mean, double std) {
+        for (int i = 0; i < data.length; i++) {
+            data[i].add(-mean).product(1. / std);
+        }
+        return;
+    }
+
+    public void unnormalize(double mean, double std) {
+        for (int i = 0; i < data.length; i++) {
+            data[i].product(std).add(mean);
+        }
+        return;
     }
 
     public DataPair[] nextBatch() throws Exception {
