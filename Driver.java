@@ -1,4 +1,3 @@
-import java.awt.image.BufferedImage;
 import java.util.Map;
 
 //import java.util.Map;
@@ -16,7 +15,7 @@ public class Driver {
 
         Map<String, Object> input = Map.of("width", 28, "height", 28, "scale", 10.);
         Map<String, Object> output = Map.of("width", 10, "height", 1, "scale", 80.);
-        int epochs = 2;
+        int epochs = 12;
         mnist.printStructure();
         for (int i = 0; i < epochs; i++) {
             mnist.train(trainer, .1);
