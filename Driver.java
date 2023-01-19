@@ -1,35 +1,60 @@
-import java.util.Map;
-
-//import java.util.Map;
+import java.util.stream.Stream;
 
 public class Driver {
-    public static void main(String[] args) throws Exception {
-        final double mnistMean = 46.409632999270976;
-        final double mnistSpread = 81.39233883364163;
-        DataIterator trainer = new DataIterator(1, "../mnist/training/input.ser", "../mnist/training/output.ser");
-        DataIterator validator = new DataIterator(100, "../mnist/validation/input.ser",
-                "../mnist/validation/output.ser");
-        DataIterator tester = new DataIterator(100, "../mnist/testing/input.ser", "../mnist/testing/output.ser");
-        NeuralNetwork mnist = new NeuralNetwork("logLoss", "./serials/mnistDigitClassify.ser")
-                .add(28 * 28)
-                .add(.8, "leakyRelu", 64)
-                .add(.8, "softmax", 10);
-        trainer.normalize(mnistMean, mnistSpread);
-        validator.normalize(mnistMean, mnistSpread);
-        tester.normalize(mnistMean, mnistSpread);
-        Map<String, Object> input = Map.of("width", 28, "height", 28, "scale", 10.);
-        Map<String, Object> output = Map.of("width", 10, "height", 1, "scale", 80.);
-        int epochs = 200;
-        mnist.printStructure();
-        double learningRate = .001;
-        for (int i = 0; i < epochs; i++) {
+    // Set hyperparameters here
+    static int batchSize = 1;
+    static double learningRate = .00001;
+    static int epochs = 200;
+    static int timeToDisplay = 1000; // 1000 ms, or 1 second
+    static int imageCount = 50; // number of images to display
+    static double scale = 10.; // used for scaling up image
 
+    public static void main(String[] args) throws Exception {
+        // Initialize the network, specifying a save location
+        NeuralNetwork mnist = new NeuralNetwork("logLoss", "./serials/mnistDigitClassify.ser");
+        mnist.add(28 * 28);
+        mnist.add("leakyRelu", 256);
+        mnist.add("softmax", 10);
+        mnist.printStructure(); // prints an overview of the network to the console
+
+        // Create DataIterators for training, validating, and testing
+        DataIterator trainer = new DataIterator(batchSize, "../mnist/training/input.ser",
+                "../mnist/training/output.ser");
+        DataIterator validator = new DataIterator(batchSize, "../mnist/validation/input.ser",
+                "../mnist/validation/output.ser");
+        DataIterator tester = new DataIterator(batchSize, "../mnist/testing/input.ser", "../mnist/testing/output.ser");
+
+        // normalize all the data in the DataIterators
+        trainer.normalize();
+        validator.normalize();
+        tester.normalize();
+
+        // this is where the training occurs
+        for (int i = 0; i < epochs; i++) {
             mnist.train(trainer, learningRate);
-            System.out.println("\r\nEpoch " + (i + 1) + " complete");
-            mnist.validate(validator);
-            mnist.printClassifierAccuracy(tester);
+            double averageCost = mnist.validate(validator);
+            double accuracy = mnist.getClassifierAccuracy(tester);
+            System.out.println("Average Cost: " + averageCost);
+            System.out.println("Accuracy: " + accuracy + " %");
+            System.out.println("Epoch " + i + " complete\r\n");
         }
-        // mnist.showImages(tester, input, output, 50, 1000);
-        return;
+
+        // Showcase of images and predictions here
+        ImageViewer viewer = new ImageViewer("inputImage");
+        viewer.show();
+        trainer.unnormalize(); // puts images back into visible interval
+        DataPair[] dataPairs = trainer.getList(imageCount); // get data from trainer iterator
+        trainer.normalize();
+        Matrix[] input = Stream.of(dataPairs).map(data -> data.input).toArray(Matrix[]::new);
+        int[] output = Stream.of(mnist.compute(input)).map(data -> data.maxIndex()).mapToInt(Integer::intValue)
+                .toArray();
+        int[] labels = Stream.of(dataPairs).map(data -> data.expected.maxIndex()).mapToInt(Integer::intValue)
+                .toArray();
+        for (int i = 0; i < input.length; i++) {
+            viewer.draw(input[i].shape(28, 28), scale);
+            System.out.println("Output: " + output[i] + ", Expected: " + labels[i]);
+            Thread.sleep(timeToDisplay);
+        }
+        viewer.hide();
     }
 }

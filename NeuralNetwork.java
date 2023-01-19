@@ -17,7 +17,9 @@ class NeuralNetwork {
         return null;
     }
 
-    public NeuralNetwork() {
+    public void save() {
+        // Need to implement
+        return;
     }
 
     public NeuralNetwork add(int inputSize) throws Exception {
@@ -29,63 +31,29 @@ class NeuralNetwork {
         return this;
     }
 
-    public NeuralNetwork add(double keepProbability, String activation, int out) throws Exception {
+    public NeuralNetwork add(String activation, int out) throws Exception {
         NodeLayer newTail = new NodeLayer(out);
-        WeightLayer newWeight = new WeightLayer(tailNode, newTail, activation, keepProbability);
+        WeightLayer newWeight = new WeightLayer(tailNode, newTail, activation);
         tailNode.nextWeightLayer = newWeight;
         newTail.previousWeightLayer = newWeight;
         tailNode = newTail;
         return this;
     }
 
-    public void save() {
-        // Need to implement
-        return;
-    }
-
-    public void showImages(DataIterator iter, Map<String, Object> inputSettings,
-            Map<String, Object> outputSettings, int numImages, int timeToDisplay) throws Exception {
-        int inputWidth, inputHeight, outputWidth, outputHeight;
-        double inputScale, outputScale;
-        ImageViewer inputViewer, outputViewer, expectedViewer;
-        inputWidth = (int) inputSettings.get("width");
-        inputHeight = (int) inputSettings.get("height");
-        inputScale = (double) inputSettings.get("scale");
-        outputWidth = (int) outputSettings.get("width");
-        outputHeight = (int) outputSettings.get("height");
-        outputScale = (double) outputSettings.get("scale");
-        inputViewer = new ImageViewer("inputViewer");
-        outputViewer = new ImageViewer("outputViewer");
-        expectedViewer = new ImageViewer("expectedViewer");
-        inputViewer.show();
-        outputViewer.show();
-        expectedViewer.show();
-        int counter = 0;
-        Matrix input, output, expected;
-        while (iter.hasNextBatch()) {
-            for (DataPair pair : iter.nextBatch()) {
-                input = pair.input.shapeClone(inputHeight, inputWidth).product(255.);
-                output = compute(pair.input).shapeClone(outputHeight, outputWidth).product(255.);
-                expected = pair.expected.shapeClone(outputHeight, outputWidth).product(255.);
-                inputViewer.draw(ImageViewer.matrixToImage(input), inputScale);
-                outputViewer.draw(ImageViewer.matrixToImage(output), outputScale);
-                expectedViewer.draw(ImageViewer.matrixToImage(expected), outputScale);
-                Thread.sleep(timeToDisplay);
-                counter++;
-                if (counter == numImages) {
-                    iter.reset();
-                    inputViewer.hide();
-                    outputViewer.hide();
-                    expectedViewer.hide();
-                    return;
-                }
-            }
+    public void printStructure() {
+        System.out.println("--------------------------------------");
+        System.out.println("-->Input layer (" + headNode.numNodes + " nodes)");
+        NodeLayer temp = headNode.nextWeightLayer.nextNodeLayer;
+        while (temp != tailNode) {
+            System.out.println(
+                    "-------> Hidden layer using " + temp.previousWeightLayer.activation + " (" + temp.numNodes
+                            + " nodes)");
+            temp = temp.nextWeightLayer.nextNodeLayer;
         }
-        iter.reset();
-        inputViewer.hide();
-        outputViewer.hide();
-        expectedViewer.hide();
-        return;
+        System.out.println("--> Output layer using " + temp.previousWeightLayer.activation + " ("
+                + temp.numNodes + " nodes)");
+        System.out.println("Cost Function: " + cost);
+        System.out.println("--------------------------------------");
     }
 
     public Matrix compute(Matrix input) throws Exception {
@@ -98,38 +66,19 @@ class NeuralNetwork {
         return temp.values.clone();
     }
 
-    public Matrix computeWithDropout(Matrix input) throws Exception {
-        NodeLayer temp = headNode;
-        temp.feed(input);
-        while (temp != tailNode) {
-            temp.nextWeightLayer.dropout();
-            temp.nextWeightLayer.dropoutUpscale();
-            temp.feedForward();
-            temp = temp.nextWeightLayer.nextNodeLayer;
+    public Matrix[] compute(Matrix[] input) throws Exception {
+        Matrix[] output = new Matrix[input.length];
+        for (int i = 0; i < output.length; i++) {
+            output[i] = compute(input[i]);
         }
-        return temp.values.clone();
-    }
-
-    public void validate(DataIterator validator) throws Exception {
-        double totalErrorSum = 0;
-        while (validator.hasNextBatch())
-            for (DataPair pair : validator.nextBatch()) {
-                totalErrorSum += error(compute(pair.input), pair.expected);
-            }
-        System.out.println("Average Cost: " + (totalErrorSum / (validator.numBatches * validator.batchSize)));
-        validator.reset();
-        return;
-    }
-
-    public double error(Matrix output, Matrix expected) throws Exception {
-        return output.cost(expected, cost, 0).getSum() / output.getColumns();
+        return output;
     }
 
     public void train(DataIterator trainer, double learningRate) throws Exception {
         while (trainer.hasNextBatch()) {
             resetAverages();
             for (DataPair pair : trainer.nextBatch()) {
-                Matrix output = computeWithDropout(pair.input);
+                Matrix output = compute(pair.input);
                 updateErrors(output, pair.expected);
                 updateAverages(output, pair.expected);
             }
@@ -138,7 +87,38 @@ class NeuralNetwork {
         trainer.reset();
         return;
     }
-    public void resetAverages() {
+
+    public double validate(DataIterator validator) throws Exception {
+        double totalErrorSum = 0;
+        while (validator.hasNextBatch())
+            for (DataPair pair : validator.nextBatch()) {
+                totalErrorSum += getError(compute(pair.input), pair.expected);
+            }
+        double AverageCost = totalErrorSum / (double) (validator.numBatches * validator.batchSize);
+        validator.reset();
+        return AverageCost;
+    }
+
+    public double getClassifierAccuracy(DataIterator iter) throws Exception {
+        double count, correct;
+        count = correct = 0;
+        while (iter.hasNextBatch()) {
+            for (DataPair pair : iter.nextBatch()) {
+                count++;
+                if (compute(pair.input).maxIndex() == pair.expected.maxIndex()) {
+                    correct++;
+                }
+            }
+        }
+        iter.reset();
+        return 100. * correct / count;
+    }
+
+    private double getError(Matrix output, Matrix expected) throws Exception {
+        return output.cost(expected, cost, 0).getSum() / output.getColumns();
+    }
+
+    private void resetAverages() {
         NodeLayer temp = headNode;
         while (temp != tailNode) {
             temp.nextWeightLayer.biasAverages.zero();
@@ -147,7 +127,7 @@ class NeuralNetwork {
         }
     }
 
-    public void updateErrors(Matrix output, Matrix expected) throws Exception {
+    private void updateErrors(Matrix output, Matrix expected) throws Exception {
         NodeLayer temp = tailNode;
         if (temp.previousWeightLayer.activation.equals("softmax") && cost.equals("logLoss")) {
             expected.product(-1);
@@ -169,7 +149,7 @@ class NeuralNetwork {
         save();
     }
 
-    public void updateAverages(Matrix output, Matrix expected) throws Exception {
+    private void updateAverages(Matrix output, Matrix expected) throws Exception {
         NodeLayer temp = tailNode;
         while (temp != headNode) {
             temp.previousWeightLayer.biasAverages.add(temp.previousWeightLayer.errors);
@@ -181,7 +161,7 @@ class NeuralNetwork {
         save();
     }
 
-    public void updateParameters(int batchSize, double learningRate) throws Exception {
+    private void updateParameters(int batchSize, double learningRate) throws Exception {
         NodeLayer temp = headNode;
         while (temp != tailNode) {
             if (!temp.nextWeightLayer.locked) {
@@ -194,36 +174,4 @@ class NeuralNetwork {
         save();
     }
 
-    public void printStructure() {
-        System.out.println("--------------------------------------");
-        System.out.println("-->Input layer (" + headNode.numNodes + " nodes)");
-        NodeLayer temp = headNode.nextWeightLayer.nextNodeLayer;
-        while (temp != tailNode) {
-            System.out.println(
-                    "-------> Hidden layer using " + temp.previousWeightLayer.activation + " (" + temp.numNodes
-                            + " nodes)");
-            temp = temp.nextWeightLayer.nextNodeLayer;
-        }
-        System.out.println("--> Output layer using " + temp.previousWeightLayer.activation + " ("
-                + temp.numNodes + " nodes)");
-        System.out.println("Cost Function: " + cost);
-        System.out.println("--------------------------------------");
-    }
-
-    public void printClassifierAccuracy(DataIterator iter) throws Exception {
-        double count, correct;
-        count = correct = 0;
-        while (iter.hasNextBatch()) {
-            for (DataPair pair : iter.nextBatch()) {
-                count++;
-                if (compute(pair.input).maxIndex() == pair.expected.maxIndex()) {
-                    correct++;
-                }
-            }
-        }
-        System.out.println("Total data points: " + (int) count);
-        System.out.println("Total missed: " + (int) (count - correct));
-        System.out.println("Accuracy: " + (100. * correct / count) + " %");
-        iter.reset();
-    }
 }

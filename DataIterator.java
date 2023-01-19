@@ -4,17 +4,41 @@ import java.io.ObjectInputStream;
 public class DataIterator {
     public final int batchSize;
     public final int numBatches;
+    public final double mean, standardDeviation;
+
+    private boolean isNormalized;
+
     private int batchCounter, index;
     private boolean hasNextBatch;
-    private final Matrix[] data, labels;
-    private boolean reversed;
+    private Matrix[] data, normalizedData, labels;
 
     public DataIterator(int batchSize, String dataPath, String labelsPath) throws Exception {
-        this.batchSize = batchSize;
-        reversed = false;
         batchCounter = 0;
         hasNextBatch = true;
         index = 0;
+        fillDataAndLabels(dataPath, labelsPath);
+        if (batchSize == 0) {
+            this.batchSize = data.length;
+        } else {
+            this.batchSize = batchSize;
+        }
+        this.numBatches = data.length / this.batchSize;
+        isNormalized = false;
+        isNormalized = false;
+        double[] meanAndStandardDeviation = StatisticalTesting.getMeanAndStandardDeviation(data);
+        this.mean = meanAndStandardDeviation[0];
+        this.standardDeviation = meanAndStandardDeviation[1];
+        fillNormalizedData();
+    }
+
+    private void fillNormalizedData() throws Exception {
+        this.normalizedData = new Matrix[data.length];
+        for (int i = 0; i < normalizedData.length; i++) {
+            this.normalizedData[i] = data[i].addClone(-mean).product(1. / standardDeviation);
+        }
+    }
+
+    private void fillDataAndLabels(String dataPath, String labelsPath) throws Exception {
         double[][] temp;
         FileInputStream fileIn = new FileInputStream(dataPath);
         ObjectInputStream in = new ObjectInputStream(fileIn);
@@ -34,30 +58,23 @@ public class DataIterator {
         for (int i = 0; i < labels.length; i++) {
             labels[i] = Matrix.create(temp[i]);
         }
-        this.numBatches = data.length / batchSize;
     }
 
-    public void normalize(double mean, double std) {
-        for (int i = 0; i < data.length; i++) {
-            data[i].add(-mean).product(1. / std);
-        }
-        return;
+    public void normalize() {
+        isNormalized = true;
     }
 
-    public void unnormalize(double mean, double std) {
-        for (int i = 0; i < data.length; i++) {
-            data[i].product(std).add(mean);
-        }
-        return;
+    public void unnormalize() {
+        isNormalized = false;
     }
 
     public DataPair[] nextBatch() throws Exception {
         DataPair[] res = new DataPair[batchSize];
         for (int i = 0; i < batchSize; i++) {
-            if (reversed) {
-                res[i] = new DataPair(labels[index], data[index]);
-            } else {
+            if (!isNormalized) {
                 res[i] = new DataPair(data[index], labels[index]);
+            } else {
+                res[i] = new DataPair(normalizedData[index], labels[index]);
             }
             index++;
         }
@@ -82,8 +99,19 @@ public class DataIterator {
         return batchCounter;
     }
 
-    public DataIterator reverse() {
-        reversed = !reversed;
-        return this;
+    public DataPair get(int index) {
+        if (!isNormalized) {
+            return new DataPair(data[index], labels[index]);
+        } else {
+            return new DataPair(normalizedData[index], labels[index]);
+        }
+    }
+
+    public DataPair[] getList(int count) {
+        DataPair[] output = new DataPair[count];
+        for (int i = 0; i < output.length; i++) {
+            output[i] = get(i);
+        }
+        return output;
     }
 }

@@ -2,8 +2,6 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
-import java.awt.image.DataBufferInt;
 import java.io.File;
 import java.io.IOException;
 
@@ -43,6 +41,13 @@ public class ImageViewer {
 
     public void draw(Matrix m, double scale) throws Exception {
         draw(ImageViewer.matrixToImage(m), scale);
+    }
+
+    public void draw(Matrix[] input, double scale, int timeToDisplay) throws Exception {
+        for (Matrix m : input) {
+            this.draw(m, scale);
+            Thread.sleep(timeToDisplay);
+        }
     }
 
     public void draw(Matrix m) throws Exception {
@@ -144,7 +149,7 @@ public class ImageViewer {
                 green = (int) greenMatrix.get(r, c);
                 green = green > 255 ? 255 : (green < 0 ? 0 : green);
                 blue = (int) blueMatrix.get(r, c);
-                blue = blue > 255 ? 255 : (blue < 0 ? 0 : blue );
+                blue = blue > 255 ? 255 : (blue < 0 ? 0 : blue);
                 Color color = new Color(red, green, blue);
                 output.setRGB(c, r, color.getRGB());
             }
