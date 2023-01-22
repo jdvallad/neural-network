@@ -1,6 +1,5 @@
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
@@ -42,11 +41,11 @@ class NeuralNetwork {
         return;
     }
 
+    @SuppressWarnings("unchecked")
     public static NeuralNetwork load(String filePath) throws Exception {
-        Map<String, Object> data = null;
         FileInputStream fileIn = new FileInputStream(filePath);
         ObjectInputStream in = new ObjectInputStream(fileIn);
-        data = (Map<String, Object>) in.readObject();
+        Map<String, Object> data = (Map<String, Object>) in.readObject();
         in.close();
         fileIn.close();
         NeuralNetwork output = new NeuralNetwork();

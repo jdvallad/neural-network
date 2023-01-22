@@ -2,7 +2,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -72,6 +71,7 @@ public class DataIterator {
         return;
     }
 
+    @SuppressWarnings("unchecked")
     public static DataIterator load(String saveFile) throws Exception {
         Map<String, Object> data = null;
         FileInputStream fileIn = new FileInputStream(saveFile);
@@ -92,6 +92,7 @@ public class DataIterator {
         return output;
     }
 
+    @SuppressWarnings("unchecked")
     private static DataPair[] loadDataPairs(String dataPairsPath) throws Exception {
         List<Map<String, Object>> temp;
         FileInputStream fileIn = new FileInputStream(dataPairsPath);

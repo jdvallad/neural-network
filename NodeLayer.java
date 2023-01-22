@@ -2,7 +2,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class NodeLayer {
-
     String activation;
     int numNodes;
     boolean locked;
@@ -36,6 +35,7 @@ public class NodeLayer {
         return data;
     }
 
+    @SuppressWarnings("unchecked")
     public static NodeLayer load(Map<String, Object> data) throws Exception {
         NodeLayer output = new NodeLayer();
         output.activation = (String) data.get("activation");
