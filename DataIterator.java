@@ -1,81 +1,112 @@
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 
 public class DataIterator {
-    public final int batchSize;
-    public final int numBatches;
-    public final double mean, standardDeviation;
-
-    private boolean isNormalized;
-
+    public int batchSize;
+    public int numBatches;
+    public double mean, standardDeviation;
     private int batchCounter, index;
     private boolean hasNextBatch;
-    private Matrix[] data, normalizedData, labels;
+    private DataPair[] dataPairs;
 
-    public DataIterator(int batchSize, String dataPath, String labelsPath) throws Exception {
+    public DataIterator(int batchSize, String dataPairsPath) throws Exception {
+        this(batchSize, loadDataPairs(dataPairsPath));
+    }
+
+    public DataIterator(int batchSize, DataPair[] data) throws Exception {
         batchCounter = 0;
         hasNextBatch = true;
         index = 0;
-        fillDataAndLabels(dataPath, labelsPath);
+        this.dataPairs = Stream.of(data).map(x -> x.clone()).toArray(DataPair[]::new);
         if (batchSize == 0) {
             this.batchSize = data.length;
         } else {
             this.batchSize = batchSize;
         }
         this.numBatches = data.length / this.batchSize;
-        isNormalized = false;
-        isNormalized = false;
-        double[] meanAndStandardDeviation = StatisticalTesting.getMeanAndStandardDeviation(data);
+        double[] meanAndStandardDeviation = StatisticalTesting.getMeanAndStandardDeviation(getData());
         this.mean = meanAndStandardDeviation[0];
         this.standardDeviation = meanAndStandardDeviation[1];
-        fillNormalizedData();
-    }
-
-    private void fillNormalizedData() throws Exception {
-        this.normalizedData = new Matrix[data.length];
-        for (int i = 0; i < normalizedData.length; i++) {
-            this.normalizedData[i] = data[i].addClone(-mean).product(1. / standardDeviation);
+        for (DataPair dataPair : dataPairs) {
+            dataPair.input.minus(this.mean).divide(this.standardDeviation).shape(1,
+                    dataPair.input.getRows() * dataPair.input.getColumns()); // normalize and flatten
         }
     }
 
-    private void fillDataAndLabels(String dataPath, String labelsPath) throws Exception {
-        double[][] temp;
-        FileInputStream fileIn = new FileInputStream(dataPath);
+    public DataIterator() {
+
+    }
+
+    public Matrix[] getData() {
+        return Stream.of(dataPairs).map(x -> x.input).toArray(Matrix[]::new);
+    }
+
+    public Matrix[] getLabels() {
+        return Stream.of(dataPairs).map(x -> x.label).toArray(Matrix[]::new);
+    }
+
+    public void save(String saveFile) throws Exception {
+        Map<String, Object> map = new HashMap<>();
+        map.put("batchSize", batchSize);
+        map.put("numBatches", numBatches);
+        map.put("mean", mean);
+        map.put("standardDeviation", standardDeviation);
+        map.put("batchCounter", batchCounter);
+        map.put("index", index);
+        map.put("hasNextBatch", hasNextBatch);
+        List<Map<String, Object>> dataPairsList = Stream.of(dataPairs).map(x -> x.save()).toList();
+        map.put("dataPairs", dataPairsList);
+        FileOutputStream fileOut = new FileOutputStream(saveFile);
+        ObjectOutputStream out = new ObjectOutputStream(fileOut);
+        out.writeObject(map);
+        out.close();
+        fileOut.close();
+        return;
+    }
+
+    public static DataIterator load(String saveFile) throws Exception {
+        Map<String, Object> data = null;
+        FileInputStream fileIn = new FileInputStream(saveFile);
         ObjectInputStream in = new ObjectInputStream(fileIn);
-        temp = (double[][]) in.readObject();
+        data = (Map<String, Object>) in.readObject();
         in.close();
         fileIn.close();
-        data = new Matrix[temp.length];
-        for (int i = 0; i < data.length; i++) {
-            data[i] = Matrix.create(temp[i]);
-        }
-        fileIn = new FileInputStream(labelsPath);
-        in = new ObjectInputStream(fileIn);
-        temp = (double[][]) in.readObject();
+        DataIterator output = new DataIterator();
+        output.batchSize = (int) data.get("batchSize");
+        output.numBatches = (int) data.get("numBatches");
+        output.mean = (double) data.get("mean");
+        output.standardDeviation = (double) data.get("standardDeviation");
+        output.batchCounter = (int) data.get("batchCounter");
+        output.index = (int) data.get("index");
+        output.hasNextBatch = (boolean) data.get("hasNextBatch");
+        List<Map<String, Object>> dataPairsList = (List<Map<String, Object>>) data.get("dataPairs");
+        output.dataPairs = dataPairsList.stream().map(x -> DataPair.load(x)).toArray(DataPair[]::new);
+        return output;
+    }
+
+    private static DataPair[] loadDataPairs(String dataPairsPath) throws Exception {
+        List<Map<String, Object>> temp;
+        FileInputStream fileIn = new FileInputStream(dataPairsPath);
+        ObjectInputStream in = new ObjectInputStream(fileIn);
+        temp = (List<Map<String, Object>>) in.readObject();
         in.close();
         fileIn.close();
-        labels = new Matrix[temp.length];
-        for (int i = 0; i < labels.length; i++) {
-            labels[i] = Matrix.create(temp[i]);
-        }
-    }
-
-    public void normalize() {
-        isNormalized = true;
-    }
-
-    public void unnormalize() {
-        isNormalized = false;
+        Collections.shuffle(temp);
+        return temp.stream().map(x -> DataPair.load(x)).toArray(DataPair[]::new);
     }
 
     public DataPair[] nextBatch() throws Exception {
         DataPair[] res = new DataPair[batchSize];
         for (int i = 0; i < batchSize; i++) {
-            if (!isNormalized) {
-                res[i] = new DataPair(data[index], labels[index]);
-            } else {
-                res[i] = new DataPair(normalizedData[index], labels[index]);
-            }
+            res[i] = dataPairs[index];
             index++;
         }
         batchCounter++;
@@ -100,18 +131,17 @@ public class DataIterator {
     }
 
     public DataPair get(int index) {
-        if (!isNormalized) {
-            return new DataPair(data[index], labels[index]);
-        } else {
-            return new DataPair(normalizedData[index], labels[index]);
-        }
+        DataPair output = dataPairs[index].clone();
+        output.input.product(this.standardDeviation).add(this.mean);
+        return output;
     }
 
-    public DataPair[] getList(int count) {
-        DataPair[] output = new DataPair[count];
-        for (int i = 0; i < output.length; i++) {
-            output[i] = get(i);
+    public DataPair[] get(int startIndex, int endIndex) {
+        DataPair[] output = new DataPair[endIndex - startIndex];
+        for (int i = startIndex; i < endIndex; i++) {
+            output[i - startIndex] = dataPairs[i];
         }
         return output;
     }
+
 }

@@ -1,3 +1,5 @@
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 public class Matrix {
@@ -7,6 +9,25 @@ public class Matrix {
     // Matrix creation methods
 
     private Matrix() {
+    }
+
+    public Map<String, Object> save() {
+        Map<String, Object> data = new HashMap<>();
+        data.put("cells", cells);
+        data.put("rows", rows);
+        data.put("columns", columns);
+        return data;
+    }
+
+    public static Matrix load(Map<String, Object> data) {
+        if (data == null) {
+            return null;
+        }
+        Matrix output = new Matrix();
+        output.cells = (double[]) data.get("cells");
+        output.rows = (int) data.get("rows");
+        output.columns = (int) data.get("columns");
+        return output;
     }
 
     private Matrix(int rows, int columns) throws Exception {
@@ -202,6 +223,8 @@ public class Matrix {
     //
     public Matrix set(String wildcard, String otherWildcard, Matrix b) throws Exception {
         if (this.rows != b.rows || this.columns != b.columns) {
+            this.printDimensions();
+            b.printDimensions();
             throw new Exception();
         }
         if (wildcard.equals("*") && otherWildcard.equals("*")) {
@@ -400,6 +423,29 @@ public class Matrix {
 
     //
 
+    public Matrix minus(Matrix b) throws Exception {
+        if (this.rows != b.rows || this.columns != b.columns) {
+            throw new Exception();
+        }
+        for (int i = 0; i < this.cells.length; i++) {
+            this.cells[i] -= b.cells[i];
+        }
+        return this;
+    }
+
+    public Matrix minus(Matrix a, Matrix b) throws Exception {
+        return this.set("*", "*", a).minus(b);
+    }
+
+    public static Matrix minusClone(Matrix a, Matrix b) throws Exception {
+        return Matrix.create(a.rows, a.columns).minus(a, b);
+    }
+
+    public Matrix minusClone(Matrix b) throws Exception {
+        return Matrix.minusClone(this, b);
+    }
+
+    //
     public Matrix elementProduct(Matrix b) throws Exception {
         if (this.rows != b.rows || this.columns != b.columns) {
             throw new Exception();
@@ -445,6 +491,27 @@ public class Matrix {
 
     //
 
+    public Matrix divide(double b) {
+        for (int i = 0; i < this.cells.length; i++) {
+            this.cells[i] /= b;
+        }
+        return this;
+    }
+
+    public Matrix divide(Matrix a, double b) throws Exception {
+        return this.set("*", "*", a).divide(b);
+    }
+
+    public static Matrix divideClone(Matrix a, double b) throws Exception {
+        return Matrix.create(a.rows, a.columns).divide(a, b);
+    }
+
+    public Matrix divideClone(double b) throws Exception {
+        return Matrix.divideClone(this, b);
+    }
+
+    //
+
     public Matrix add(double b) {
         for (int i = 0; i < this.cells.length; i++) {
             this.cells[i] += b;
@@ -462,6 +529,27 @@ public class Matrix {
 
     public Matrix addClone(double b) throws Exception {
         return Matrix.addClone(this, b);
+    }
+
+    //
+
+    public Matrix minus(double b) {
+        for (int i = 0; i < this.cells.length; i++) {
+            this.cells[i] -= b;
+        }
+        return this;
+    }
+
+    public Matrix minus(Matrix a, double b) throws Exception {
+        return this.set("*", "*", a).minus(b);
+    }
+
+    public static Matrix minusClone(Matrix a, double b) throws Exception {
+        return Matrix.create(a.rows, a.columns).minus(a, b);
+    }
+
+    public Matrix minusClone(double b) throws Exception {
+        return Matrix.minusClone(this, b);
     }
 
     //

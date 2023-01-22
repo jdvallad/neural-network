@@ -1,58 +1,110 @@
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 
 class NeuralNetwork {
 
     String cost, saveFile;
     NodeLayer headNode, tailNode;
 
-    public NeuralNetwork(String cost, String saveFile) {
-        this.cost = cost;
-        this.saveFile = saveFile;
-        headNode = null;
-        tailNode = null;
+    public NeuralNetwork(int inputNodes, String activation) throws Exception {
+        headNode = new NodeLayer(inputNodes, activation);
+        tailNode = headNode;
     }
 
-    public static NeuralNetwork load(String filePath) {
-        // Need to implement
-        return null;
+    public NeuralNetwork() {
+
     }
 
-    public void save() {
-        // Need to implement
+    public void save() throws Exception {
+        Map<String, Object> data = new HashMap<>();
+        data.put("cost", cost);
+        data.put("saveFile", saveFile);
+        List<Map<String, Object>> layers = new ArrayList<>();
+        NodeLayer temp = headNode;
+        while (temp != tailNode) {
+            layers.add(temp.save());
+            temp = temp.nextNodeLayer;
+        }
+        layers.add(temp.save());
+        data.put("layers", layers);
+        FileOutputStream fileOut = new FileOutputStream(saveFile);
+        ObjectOutputStream out = new ObjectOutputStream(fileOut);
+        out.writeObject(data);
+        out.close();
+        fileOut.close();
         return;
     }
 
-    public NeuralNetwork add(int inputSize) throws Exception {
-        if (headNode != null | tailNode != null) {
-            throw new Exception("You can only add an input layer once!");
+    public static NeuralNetwork load(String filePath) throws Exception {
+        Map<String, Object> data = null;
+        FileInputStream fileIn = new FileInputStream(filePath);
+        ObjectInputStream in = new ObjectInputStream(fileIn);
+        data = (Map<String, Object>) in.readObject();
+        in.close();
+        fileIn.close();
+        NeuralNetwork output = new NeuralNetwork();
+        output.cost = (String) data.get("cost");
+        output.saveFile = (String) data.get("saveFile");
+        List<Map<String, Object>> layers = (List<Map<String, Object>>) data.get("layers");
+        NodeLayer prior = NodeLayer.load(layers.get(0));
+        output.headNode = prior;
+        output.tailNode = prior;
+        NodeLayer next = null;
+        for (int i = 1; i < layers.size(); i++) {
+            next = NodeLayer.load(layers.get(i));
+            prior.nextNodeLayer = next;
+            next.previousNodeLayer = prior;
+            prior = next;
         }
-        headNode = new NodeLayer(inputSize);
-        tailNode = headNode;
-        return this;
+        output.tailNode = next;
+        return output;
     }
 
-    public NeuralNetwork add(String activation, int out) throws Exception {
-        NodeLayer newTail = new NodeLayer(out);
-        WeightLayer newWeight = new WeightLayer(tailNode, newTail, activation);
-        tailNode.nextWeightLayer = newWeight;
-        newTail.previousWeightLayer = newWeight;
+    public NeuralNetwork add(int inputNodes, String activation) throws Exception {
+        NodeLayer newTail = new NodeLayer(inputNodes, activation);
+        tailNode.nextNodeLayer = newTail;
+        newTail.previousNodeLayer = tailNode;
         tailNode = newTail;
         return this;
     }
 
+    public NeuralNetwork add(int outputNodes) throws Exception {
+        if (tailNode == null | tailNode.activation.equals("")) {
+            throw new Exception("You can only add an output layer once!");
+        }
+        return this.add(outputNodes, "");
+    }
+
+    public void compile(String cost, String saveFile) throws Exception {
+        this.cost = cost;
+        this.saveFile = saveFile;
+        NodeLayer temp = headNode;
+        while (temp != tailNode) {
+            temp.compile();
+            temp = temp.nextNodeLayer;
+        }
+    }
+
     public void printStructure() {
+        NodeLayer temp = headNode;
         System.out.println("--------------------------------------");
-        System.out.println("-->Input layer (" + headNode.numNodes + " nodes)");
-        NodeLayer temp = headNode.nextWeightLayer.nextNodeLayer;
+        System.out.println("-->Input layer with " + temp.numNodes + " nodes using " + temp.activation);
+        temp = temp.nextNodeLayer;
         while (temp != tailNode) {
             System.out.println(
-                    "-------> Hidden layer using " + temp.previousWeightLayer.activation + " (" + temp.numNodes
-                            + " nodes)");
-            temp = temp.nextWeightLayer.nextNodeLayer;
+                    "-------> Hidden layer with " + temp.numNodes + " nodes using " + temp.activation);
+            temp = temp.nextNodeLayer;
         }
-        System.out.println("--> Output layer using " + temp.previousWeightLayer.activation + " ("
-                + temp.numNodes + " nodes)");
+        System.out.println("--> Output layer with " + temp.numNodes + " nodes");
         System.out.println("Cost Function: " + cost);
+        System.out.println("Save Location: " + saveFile);
         System.out.println("--------------------------------------");
     }
 
@@ -60,8 +112,8 @@ class NeuralNetwork {
         NodeLayer temp = headNode;
         temp.feed(input);
         while (temp != tailNode) {
-            temp.feedForward();
-            temp = temp.nextWeightLayer.nextNodeLayer;
+            temp.propogate();
+            temp = temp.nextNodeLayer;
         }
         return temp.values.clone();
     }
@@ -79,10 +131,10 @@ class NeuralNetwork {
             resetAverages();
             for (DataPair pair : trainer.nextBatch()) {
                 Matrix output = compute(pair.input);
-                updateErrors(output, pair.expected);
-                updateAverages(output, pair.expected);
+                backPropogateErrors(output, pair.label);
+                updateAverages();
             }
-            updateParameters(trainer.batchSize, learningRate);
+            updateParameters(-learningRate / (double) trainer.batchSize);
         }
         trainer.reset();
         return;
@@ -92,7 +144,7 @@ class NeuralNetwork {
         double totalErrorSum = 0;
         while (validator.hasNextBatch())
             for (DataPair pair : validator.nextBatch()) {
-                totalErrorSum += getError(compute(pair.input), pair.expected);
+                totalErrorSum += getCost(compute(pair.input), pair.label);
             }
         double AverageCost = totalErrorSum / (double) (validator.numBatches * validator.batchSize);
         validator.reset();
@@ -100,78 +152,57 @@ class NeuralNetwork {
     }
 
     public double getClassifierAccuracy(DataIterator iter) throws Exception {
-        double count, correct;
-        count = correct = 0;
+        int count = 0;
+        int correct = 0;
         while (iter.hasNextBatch()) {
             for (DataPair pair : iter.nextBatch()) {
                 count++;
-                if (compute(pair.input).maxIndex() == pair.expected.maxIndex()) {
+                if (compute(pair.input).maxIndex() == pair.label.maxIndex()) {
                     correct++;
                 }
             }
         }
         iter.reset();
-        return 100. * correct / count;
+        return 100. * (double) correct / (double) count;
     }
 
-    private double getError(Matrix output, Matrix expected) throws Exception {
-        return output.cost(expected, cost, 0).getSum() / output.getColumns();
+    private double getCost(Matrix output, Matrix expected) throws Exception {
+        return output.cost(expected, cost, 0).getSum() / (double) (output.getColumns() * output.getRows());
     }
 
     private void resetAverages() {
         NodeLayer temp = headNode;
         while (temp != tailNode) {
-            temp.nextWeightLayer.biasAverages.zero();
-            temp.nextWeightLayer.weightAverages.zero();
-            temp = temp.nextWeightLayer.nextNodeLayer;
+            temp.biasAverages.zero();
+            temp.weightAverages.zero();
+            temp = temp.nextNodeLayer;
         }
     }
 
-    private void updateErrors(Matrix output, Matrix expected) throws Exception {
+    private void backPropogateErrors(Matrix output, Matrix expected) throws Exception {
         NodeLayer temp = tailNode;
-        if (temp.previousWeightLayer.activation.equals("softmax") && cost.equals("logLoss")) {
-            expected.product(-1);
-            temp.previousWeightLayer.errors.add(output, expected);
-            expected.product(-1);
-        } else {
-            temp.previousWeightLayer.errors.activate(temp.previousWeightLayer.weightedSum(),
-                    temp.previousWeightLayer.activation, 1);
-            temp.previousWeightLayer.errors.elementProduct(Matrix.costClone(output, expected, cost, 1));
-        }
-        temp = temp.previousWeightLayer.previousNodeLayer;
+        temp.backPropogateErrorsTailNode(output, expected, cost);
+        temp = temp.previousNodeLayer;
         while (temp != headNode) {
-            temp.previousWeightLayer.errors.transpose()
-                    .innerProduct(temp.nextWeightLayer.weights, temp.nextWeightLayer.errors).transpose();
-            temp.previousWeightLayer.errors.elementProduct(temp.previousWeightLayer.weightedSum()
-                    .activate(temp.previousWeightLayer.activation, 1));
-            temp = temp.previousWeightLayer.previousNodeLayer;
+            temp.backPropogateErrors();
+            temp = temp.previousNodeLayer;
         }
-        save();
     }
 
-    private void updateAverages(Matrix output, Matrix expected) throws Exception {
-        NodeLayer temp = tailNode;
-        while (temp != headNode) {
-            temp.previousWeightLayer.biasAverages.add(temp.previousWeightLayer.errors);
-            temp.previousWeightLayer.weightAverages
-                    .add(Matrix.outerProductClone(temp.previousWeightLayer.previousNodeLayer.values,
-                            temp.previousWeightLayer.errors));
-            temp = temp.previousWeightLayer.previousNodeLayer;
-        }
-        save();
-    }
-
-    private void updateParameters(int batchSize, double learningRate) throws Exception {
+    private void updateAverages() throws Exception {
         NodeLayer temp = headNode;
         while (temp != tailNode) {
-            if (!temp.nextWeightLayer.locked) {
-                double scalar = -learningRate / batchSize;
-                temp.nextWeightLayer.biases.add(temp.nextWeightLayer.biasAverages.product(scalar));
-                temp.nextWeightLayer.weights.add(temp.nextWeightLayer.weightAverages.product(scalar));
-            }
-            temp = temp.nextWeightLayer.nextNodeLayer;
+            temp.updateAverages();
+            temp = temp.nextNodeLayer;
         }
-        save();
+    }
+
+    private void updateParameters(double scalar) throws Exception {
+        NodeLayer temp = headNode;
+        while (temp != tailNode) {
+            temp.updateParameters(scalar);
+            temp = temp.nextNodeLayer;
+        }
     }
 
 }

@@ -43,13 +43,6 @@ public class ImageViewer {
         draw(ImageViewer.matrixToImage(m), scale);
     }
 
-    public void draw(Matrix[] input, double scale, int timeToDisplay) throws Exception {
-        for (Matrix m : input) {
-            this.draw(m, scale);
-            Thread.sleep(timeToDisplay);
-        }
-    }
-
     public void draw(Matrix m) throws Exception {
         this.draw(ImageViewer.matrixToImage(m));
     }

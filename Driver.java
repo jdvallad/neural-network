@@ -1,60 +1,60 @@
-import java.util.stream.Stream;
 
 public class Driver {
     // Set hyperparameters here
     static int batchSize = 1;
-    static double learningRate = .00001;
-    static int epochs = 200;
-    static int timeToDisplay = 1000; // 1000 ms, or 1 second
-    static int imageCount = 50; // number of images to display
-    static double scale = 10.; // used for scaling up image
+    static double learningRate = .0003;
+    static int epochs = 30;
+
+    static int timeToDisplay = 1000;
+    static int imageCount = 50;
+    static double scale = 10.;
+    static NeuralNetwork mnist;
+    static DataIterator trainer, validator, tester;
 
     public static void main(String[] args) throws Exception {
-        // Initialize the network, specifying a save location
-        NeuralNetwork mnist = new NeuralNetwork("logLoss", "./serials/mnistDigitClassify.ser");
-        mnist.add(28 * 28);
-        mnist.add("leakyRelu", 256);
-        mnist.add("softmax", 10);
-        mnist.printStructure(); // prints an overview of the network to the console
+        mnist = new NeuralNetwork(28 * 28, "leakyRelu");
+        mnist.add(16, "softmax");
+        mnist.add(10);
+        mnist.compile("logLoss", "./serials/test.ser");
+        mnist.printStructure();
+        // trainer = DataIterator.load("./serials/mnistTrainer.ser");
+        // tester = DataIterator.load("./serials/mnistTester.ser");
+        // validator = DataIterator.load("./serials/mnistValidator.ser");
 
-        // Create DataIterators for training, validating, and testing
-        DataIterator trainer = new DataIterator(batchSize, "../mnist/training/input.ser",
-                "../mnist/training/output.ser");
-        DataIterator validator = new DataIterator(batchSize, "../mnist/validation/input.ser",
-                "../mnist/validation/output.ser");
-        DataIterator tester = new DataIterator(batchSize, "../mnist/testing/input.ser", "../mnist/testing/output.ser");
-
-        // normalize all the data in the DataIterators
-        trainer.normalize();
-        validator.normalize();
-        tester.normalize();
+        trainer = new DataIterator(batchSize, "../mnist/training/dataPairs.ser");
+        validator = new DataIterator(batchSize, "../mnist/validation/dataPairs.ser");
+        tester = new DataIterator(batchSize, "../mnist/testing/dataPairs.ser");
+        trainer.save("./serials/mnistTrainer.ser");
+        tester.save("./serials/mnistTester.ser");
+        validator.save("./serials/mnistValidator.ser");
 
         // this is where the training occurs
-        for (int i = 0; i < epochs; i++) {
+        System.out.println("Initializing training...\r\n");
+        for (int i = 1; i < epochs + 1; i++) {
             mnist.train(trainer, learningRate);
+            mnist.save();
             double averageCost = mnist.validate(validator);
             double accuracy = mnist.getClassifierAccuracy(tester);
             System.out.println("Average Cost: " + averageCost);
             System.out.println("Accuracy: " + accuracy + " %");
-            System.out.println("Epoch " + i + " complete\r\n");
+            System.out.println("Epoch " + " complete\r\n");
         }
+        System.out.println("Training Complete!\r\n");
 
         // Showcase of images and predictions here
+        DataPair[] dataPairs = tester.get(0, imageCount);
         ImageViewer viewer = new ImageViewer("inputImage");
         viewer.show();
-        trainer.unnormalize(); // puts images back into visible interval
-        DataPair[] dataPairs = trainer.getList(imageCount); // get data from trainer iterator
-        trainer.normalize();
-        Matrix[] input = Stream.of(dataPairs).map(data -> data.input).toArray(Matrix[]::new);
-        int[] output = Stream.of(mnist.compute(input)).map(data -> data.maxIndex()).mapToInt(Integer::intValue)
-                .toArray();
-        int[] labels = Stream.of(dataPairs).map(data -> data.expected.maxIndex()).mapToInt(Integer::intValue)
-                .toArray();
-        for (int i = 0; i < input.length; i++) {
-            viewer.draw(input[i].shape(28, 28), scale);
-            System.out.println("Output: " + output[i] + ", Expected: " + labels[i]);
+        for (int i = 0; i < dataPairs.length; i++) {
+            viewer.draw(dataPairs[i].input.shapeClone(28, 28), scale);
+            int expectedIndex = dataPairs[i].label.maxIndex();
+            int actualIndex = mnist.compute(dataPairs[i].input).maxIndex();
+            String isWrong = expectedIndex != actualIndex ? " (Incorrect)" : "";
+            System.out.println("Expected: " + expectedIndex
+                    + ", Output: " + actualIndex + isWrong + "\r\n");
             Thread.sleep(timeToDisplay);
         }
         viewer.hide();
+        return;
     }
 }
