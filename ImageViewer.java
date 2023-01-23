@@ -182,6 +182,23 @@ public class ImageViewer {
         return greyMatrix(getCombinedMatrix(image));
     }
 
+    static void printImage(BufferedImage image, int cutOff) throws Exception {
+        greyMatrix(image).print(cutOff);;
+    }
+
+    static void printImage(Matrix m, double cutoff) throws Exception {
+        System.out.println();
+        for (int i = 0; i < m.getColumns(); i++) {
+            for (int j = 0; j < m.getRows(); j++) {
+                char print = m.get(j, i) > cutoff ? '*' : ' ';
+                System.out.print(print);
+            }
+            System.out.println();
+        }
+    
+
+    }
+
     static BufferedImage pathToImage(String filePath) throws IOException {
         return ImageIO.read(new File(filePath));
     }

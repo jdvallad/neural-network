@@ -120,6 +120,25 @@ public class Matrix {
         System.out.print("" + this.get(this.rows - 1, this.columns - 1) + "])\r\n\r\n");
     }
 
+    public void print(int cutoff) throws Exception {
+        System.out.println();
+        for (int i = 0; i < this.getColumns() + 1; i++) {
+            System.out.print("__");
+        }
+        System.out.println();
+        for (int i = 0; i < this.getColumns(); i++) {
+            System.out.print('|');
+            for (int j = 0; j < this.getRows(); j++) {
+                char print = this.get(j, i) > cutoff ? '*' : ' ';
+                System.out.print(" " + print);
+            }
+            System.out.println('|');
+        }
+        for (int i = 0; i < this.getColumns() + 1; i++) {
+            System.out.print("__");
+        }
+    }
+
     public void printDimensions() throws Exception {
         System.out.println("\r\nThis is an " + this.rows + "x" + this.columns + " Matrix.");
     }
@@ -368,6 +387,7 @@ public class Matrix {
     }
 
     //
+
     public Matrix transpose() throws Exception {
         Matrix output = this.clone();
         output.rows = this.columns;
@@ -385,7 +405,7 @@ public class Matrix {
     }
 
     public Matrix transpose(Matrix a) throws Exception {
-        return this.transpose().set("*", "*", a).transpose();
+        return this.set("*", "*", a).transpose();
 
     }
 
@@ -864,15 +884,26 @@ public class Matrix {
         switch (nthDerivative) {
             case 0:
                 for (int i = 0; i < this.cells.length; i++) {
-                    this.cells[i] = 1. - (2. / (1. + Math.exp(2. * this.cells[i])));
+                    this.cells[i] = 1.7159 * fast_tanh(.66666666 * this.cells[i], 0);
                 }
                 return this;
             case 1:
                 for (int i = 0; i < this.cells.length; i++) {
-                    double temp = 1. / (1. + Math.exp(2. * this.cells[i]));
-                    this.cells[i] = 4. * temp * (1. - temp);
+                    this.cells[i] = 1.143933 * fast_tanh(.6666666 * this.cells[i], 1);
                 }
                 return this;
+            default:
+                throw new Exception();
+        }
+    }
+
+    private double fast_tanh(double input, int nthDerivative) throws Exception {
+        switch (nthDerivative) {
+            case 0:
+                return 1. - (2. / (1. + Math.exp(2. * input)));
+            case 1:
+                double temp = fast_tanh(input, 0);
+                return 1. - temp * temp;
             default:
                 throw new Exception();
         }

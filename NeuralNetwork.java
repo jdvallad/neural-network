@@ -9,7 +9,7 @@ import java.util.List;
 
 class NeuralNetwork {
 
-    String cost, saveFile;
+    String cost;
     NodeLayer headNode, tailNode;
 
     public NeuralNetwork(int inputNodes, String activation) throws Exception {
@@ -21,10 +21,9 @@ class NeuralNetwork {
 
     }
 
-    public void save() throws Exception {
+    public void save(String saveFile) throws Exception {
         Map<String, Object> data = new HashMap<>();
         data.put("cost", cost);
-        data.put("saveFile", saveFile);
         List<Map<String, Object>> layers = new ArrayList<>();
         NodeLayer temp = headNode;
         while (temp != tailNode) {
@@ -50,7 +49,6 @@ class NeuralNetwork {
         fileIn.close();
         NeuralNetwork output = new NeuralNetwork();
         output.cost = (String) data.get("cost");
-        output.saveFile = (String) data.get("saveFile");
         List<Map<String, Object>> layers = (List<Map<String, Object>>) data.get("layers");
         NodeLayer prior = NodeLayer.load(layers.get(0));
         output.headNode = prior;
@@ -81,9 +79,8 @@ class NeuralNetwork {
         return this.add(outputNodes, "");
     }
 
-    public void compile(String cost, String saveFile) throws Exception {
+    public void compile(String cost) throws Exception {
         this.cost = cost;
-        this.saveFile = saveFile;
         NodeLayer temp = headNode;
         while (temp != tailNode) {
             temp.compile();
@@ -103,7 +100,6 @@ class NeuralNetwork {
         }
         System.out.println("--> Output layer with " + temp.numNodes + " nodes");
         System.out.println("Cost Function: " + cost);
-        System.out.println("Save Location: " + saveFile);
         System.out.println("--------------------------------------");
     }
 
