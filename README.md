@@ -1,6 +1,7 @@
 # NeuralNetwork
-This is my neural network Java Program!
-This program is a rather simple neural network with no optimizations.
-To use, create a subclass of the abstract dataIterator class in order to iterate over all the desired data. Implement all the required methods.
-Documentation will be added at a later date to make this process easier.
+This is a simple implementation of a fully connected neural network.
+This was mainly put together in order to gain a deeper understanding of the math behind backpropogation and the structure of neural networks.
+
+In order to use this in tandem with the mnist dataset, I recommend using the repository located [here](https://github.com/jdvallad/mnist).
+
 Enjoy!
