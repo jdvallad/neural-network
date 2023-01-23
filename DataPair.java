@@ -28,6 +28,7 @@ public class DataPair {
         return output;
     }
 
+    @SuppressWarnings("unchecked")
     public static DataPair load(Map<String, Object> input) {
         DataPair output = new DataPair();
         output.input = Matrix.load((Map<String, Object>) input.get("input"));
