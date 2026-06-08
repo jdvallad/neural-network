@@ -2,24 +2,25 @@
 public class Driver {
     // Set hyperparameters here
     static int batchSize = 64;
-    static double learningRate = .03;
-    static double decayRate = 0.85; // This shrinks the learning rate by 15% each epoch
-    static int epochs = 20;
+    static double learningRate = .02;
+    static double decayRate = 0.95; // This shrinks the learning rate by 15% each epoch
+    static int epochs = 0;
     static int timeToDisplay = 1000;
-    static int imageCount = 5;
+    static int imageCount = 50;
     static double scale = 10.;
     static NeuralNetwork mnist;
     static DataIterator trainer, validator, tester;
-    static String saveLocation = "./serials/yourNeuralNetwork.ser";
+    static String saveLocation = "./serials/cope.ser";
 
     public static void main(String[] args) throws Exception {
         // Create the network
-        mnist = new NeuralNetwork(28 * 28, "leakyRelu");
-        mnist.add(128, "softmax");
-        mnist.add(10);
-        mnist.compile("logLoss");
+        // mnist = new NeuralNetwork(28 * 28, "swish");
+        // mnist.add(256, "swish");
+        // mnist.add(64,"softmax");
+        // mnist.add(10);
+        // mnist.compile("logLoss");
+        mnist = NeuralNetwork.load("./serials/mnistClassify97dot53accurate.ser");
         mnist.printStructure();
-
         // Initialize the DataIterators
         trainer = new DataIterator(batchSize, "../mnist/training/dataPairs.ser");
         validator = new DataIterator(batchSize, "../mnist/validation/dataPairs.ser");
@@ -45,7 +46,7 @@ public class Driver {
             mnist.save(saveLocation);
             long epochEndTime = System.currentTimeMillis();
             double epochTimeSec = (epochEndTime - epochStartTime) / 1000.0;
-            System.out.println("Learning Rate: "+ learningRate);
+            System.out.println("Learning Rate: " + learningRate);
             System.out.println("Average Cost: " + averageCost);
             System.out.println("Accuracy: " + accuracy + " %");
             System.out.println("Epoch " + i + " complete in " + epochTimeSec + " seconds\r\n");
