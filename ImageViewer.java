@@ -15,16 +15,32 @@ public class ImageViewer {
         frame.setResizable(false);
     }
 
+    // public void draw(BufferedImage image, int width, int height) {
+    // ImageIcon icon = new ImageIcon(image);
+    // frame.remove(label);
+    // label = new JLabel(new ImageIcon(icon.getImage().getScaledInstance(width,
+    // height, Image.SCALE_SMOOTH)));
+    // frame.add(label);
+    // frame.pack();
+    // frame.validate();
+    // frame.repaint();
+    // return;
+    // }
     public void draw(BufferedImage image, int width, int height) {
-        ImageIcon icon = new ImageIcon(image);
-        frame.remove(label);
-        label = new JLabel(new ImageIcon(icon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH)));
-        frame.add(label);
-        frame.pack();
-        frame.validate();
-        frame.repaint();
-        return;
-    }
+        // 1. Use SCALE_FAST for instant rendering instead of SCALE_SMOOTH
+        Image scaledImage = image.getScaledInstance(width, height, Image.SCALE_FAST);
+
+        // 2. Just swap the picture inside the existing label instead of destroying it
+        label.setIcon(new ImageIcon(scaledImage));
+
+        // 3. If this is the very first image, add the label to the frame and size it
+        if (label.getParent() == null) {
+            frame.add(label);
+            frame.pack();
+        }
+
+        // 4. Instantly paint the new image
+        label.paintImmediately(0, 0, label.getWidth(), label.getHeight());    }
 
     public void draw(BufferedImage image, double scale) {
         draw(image, (int) (image.getWidth() * scale), (int) (image.getHeight() * scale));
@@ -183,7 +199,8 @@ public class ImageViewer {
     }
 
     static void printImage(BufferedImage image, int cutOff) throws Exception {
-        greyMatrix(image).print(cutOff);;
+        greyMatrix(image).print(cutOff);
+        ;
     }
 
     static void printImage(Matrix m, double cutoff) throws Exception {
@@ -195,7 +212,6 @@ public class ImageViewer {
             }
             System.out.println();
         }
-    
 
     }
 

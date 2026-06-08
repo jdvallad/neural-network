@@ -598,24 +598,45 @@ public class Matrix {
 
     //
 
-    public Matrix product(Matrix b) throws Exception {
-        // Don't use this unless you know THIS and b are both
-        // square matrices of the same size
-        if (this.rows != this.columns || b.rows != b.columns || this.rows != b.columns) {
-            throw new Exception();
-        }
-        return this.set("*", "*", this.productClone(b));
-    }
+    // public Matrix product(Matrix b) throws Exception {
+    // // Don't use this unless you know THIS and b are both
+    // // square matrices of the same size
+    // if (this.rows != this.columns || b.rows != b.columns || this.rows !=
+    // b.columns) {
+    // throw new Exception();
+    // }
+    // return this.set("*", "*", this.productClone(b));
+    // }
 
+    // public Matrix product(Matrix a, Matrix b) throws Exception {
+    // if (a.columns != b.rows) {
+    // throw new Exception();
+    // }
+    // this.zero();
+    // for (int i = 0; i < a.rows; i++) {
+    // for (int j = 0; j < b.columns; j++) {
+    // for (int k = 0; k < a.columns; k++) {
+    // this.set(i, j, this.get(i, j) + a.get(i, k) * b.get(k, j));
+    // }
+    // }
+    // }
+    // return this;
+    // }
     public Matrix product(Matrix a, Matrix b) throws Exception {
         if (a.columns != b.rows) {
             throw new Exception();
         }
         this.zero();
+
+        // CPU Cache-Optimized & Bounds-Check Bypassed Multiplication
         for (int i = 0; i < a.rows; i++) {
-            for (int j = 0; j < b.columns; j++) {
-                for (int k = 0; k < a.columns; k++) {
-                    this.set(i, j, this.get(i, j) + a.get(i, k) * b.get(k, j));
+            for (int k = 0; k < a.columns; k++) {
+                // Store this value locally so we don't look it up repeatedly
+                double aVal = a.cells[i * a.columns + k];
+
+                for (int j = 0; j < b.columns; j++) {
+                    // Directly access and mutate the raw 1D array sequentially
+                    this.cells[i * b.columns + j] += aVal * b.cells[k * b.columns + j];
                 }
             }
         }

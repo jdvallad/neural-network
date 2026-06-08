@@ -140,7 +140,7 @@ public class DataIterator {
     public DataPair[] get(int startIndex, int endIndex) {
         DataPair[] output = new DataPair[endIndex - startIndex];
         for (int i = startIndex; i < endIndex; i++) {
-            output[i - startIndex] = dataPairs[i];
+            output[i - startIndex] = this.get(i);
         }
         return output;
     }
